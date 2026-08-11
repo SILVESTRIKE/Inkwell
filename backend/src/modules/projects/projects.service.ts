@@ -50,7 +50,7 @@ export class ProjectsService {
   }
 
   async getUserProjects(userId: string): Promise<IProject[]> {
-    return await Project.find({ userId }).sort({ createdAt: -1 });
+    return await Project.find({ userId, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
   }
 
   async getProjectById(userId: string, projectId: string): Promise<IProject> {

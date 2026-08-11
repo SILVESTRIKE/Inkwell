@@ -125,10 +125,14 @@ export const api = {
   },
 
   async runStep(projectId: string, stepNumber: number, userStyle?: string): Promise<ProjectData> {
-    return await request<ProjectData>(`/api/projects/${projectId}/steps/${stepNumber}/run`, {
-      method: 'POST',
-      body: JSON.stringify({ userStyle }),
-    });
+    const result = await request<{ message: string; jobId: string; project: ProjectData }>(
+      `/api/projects/${projectId}/steps/${stepNumber}/run`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ userStyle }),
+      }
+    )
+    return result.project
   },
 
   async recoverStep(projectId: string, stepNumber: number): Promise<ProjectData> {
@@ -138,6 +142,6 @@ export const api = {
   },
 
   getMediaUrl(projectId: string, filename: string): string {
-    return `${API_BASE_URL}/api/media/${projectId}/${filename}`;
+    return `${API_BASE_URL}/api/media/files/${projectId}/${filename}`
   },
 };
