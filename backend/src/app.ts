@@ -7,8 +7,6 @@ import pipelineRoutes from './modules/pipeline/pipeline.routes';
 import mediaRoutes from './modules/media/media.routes';
 import { errorHandler } from './shared/middleware/error.middleware';
 import { globalRateLimiter } from './shared/middleware/rate-limit.middleware';
-import { metricsMiddleware, metricsHandler } from './shared/metrics/metrics';
-import { setupBullBoardDashboard } from './shared/queue/dashboard';
 
 export const app = express();
 
@@ -19,20 +17,11 @@ app.use(express.json({ limit: '10mb' }));
 // Global Rate Limiter to prevent API abuse
 app.use(globalRateLimiter);
 
-// Prometheus metrics tracking middleware
-app.use(metricsMiddleware);
-
-// BullMQ Visual Admin Dashboard
-app.use('/admin/queues', setupBullBoardDashboard());
-
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/projects', pipelineRoutes);
 app.use('/api/media', mediaRoutes);
-
-// Observability: Prometheus /metrics endpoint
-app.get('/metrics', metricsHandler);
 
 // Health check
 app.get('/api/health', (req, res) => {
