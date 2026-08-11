@@ -5,6 +5,10 @@ const transformPaths = (data: any, baseUrl: string, parentData?: any): any => {
   if (Array.isArray(data)) return data.map((item) => transformPaths(item, baseUrl, parentData));
 
   const obj = typeof data.toObject === 'function' ? data.toObject() : { ...data };
+  if (obj._id) {
+    obj._id = obj._id.toString();
+    obj.id = obj._id;
+  }
 
   const createUrl = (filePath: string) => {
     const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
@@ -16,22 +20,24 @@ const transformPaths = (data: any, baseUrl: string, parentData?: any): any => {
   }
 
   if (typeof obj.portraitFilename === 'string') {
-    const pId = obj.projectId || data.id || data._id;
+    const pId = obj.projectId || parentData?.id || parentData?._id;
     if (pId) {
-      obj.portraitUrl = createUrl(`/api/media/files/${pId}/${obj.portraitFilename}`);
+      const cleanPid = typeof pId === 'object' ? pId.toString() : pId;
+      obj.portraitUrl = createUrl(`/api/media/files/${cleanPid}/${obj.portraitFilename}`);
     }
   }
 
   if (typeof obj.illustrationFilename === 'string') {
-    const pId = obj.projectId || data.id || data._id;
+    const pId = obj.projectId || parentData?.id || parentData?._id;
     if (pId) {
-      obj.illustrationUrl = createUrl(`/api/media/files/${pId}/${obj.illustrationFilename}`);
+      const cleanPid = typeof pId === 'object' ? pId.toString() : pId;
+      obj.illustrationUrl = createUrl(`/api/media/files/${cleanPid}/${obj.illustrationFilename}`);
     }
   }
 
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      const childData = obj._id || obj.id ? { ...obj, projectId: obj.id || obj._id } : data;
+      const childData = obj._id || obj.id ? { ...obj, projectId: (obj.id || obj._id).toString() } : parentData;
       obj[key] = transformPaths(obj[key], baseUrl, childData);
     }
   }

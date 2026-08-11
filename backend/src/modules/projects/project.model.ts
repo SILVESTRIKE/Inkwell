@@ -106,7 +106,21 @@ const ProjectSchema: Schema = new Schema(
       chapters: [ChapterSchema],
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform(doc: any, ret: any) {
+        ret.id = ret._id ? ret._id.toString() : ret.id;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform(doc: any, ret: any) {
+        ret.id = ret._id ? ret._id.toString() : ret.id;
+      },
+    },
+  }
 );
 
 export const Project = mongoose.model<IProject>('Project', ProjectSchema);
