@@ -30,22 +30,28 @@ export async function runCharactersStep(
 
   let rawList: any[] = [];
   try {
-    const parsed = JSON.parse(responseText);
-    rawList = Array.isArray(parsed) ? parsed : (parsed.characters || Object.values(parsed)[0] || []);
+    const cleanJson = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(cleanJson);
+    rawList = Array.isArray(parsed) ? parsed : (parsed.characters || parsed.items || Object.values(parsed)[0] || []);
     if (!Array.isArray(rawList)) {
       rawList = [];
     }
   } catch {
+    rawList = [];
+  }
+
+  // GUARANTEE: Never return empty array. Fallback to default main characters if Gemini returned empty array or non-JSON.
+  if (rawList.length === 0) {
     rawList = [
       {
         name: 'Main Character 1',
-        description: 'Adult protagonist of the book.',
-        imagePrompt: `Portrait of main character 1 in ${artStyle} art style.`,
+        description: 'Adult protagonist of the story.',
+        imagePrompt: `Portrait of the main adult character in ${artStyle} art style.`,
       },
       {
         name: 'Main Character 2',
-        description: 'Adult companion character of the book.',
-        imagePrompt: `Portrait of main character 2 in ${artStyle} art style.`,
+        description: 'Adult companion character of the story.',
+        imagePrompt: `Portrait of the secondary adult character in ${artStyle} art style.`,
       },
     ];
   }

@@ -22,6 +22,11 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
     }
   }
 
+  // 3. Fall back to ?token= query parameter (for HTML <img> tags)
+  if (!token && typeof req.query?.token === 'string') {
+    token = req.query.token;
+  }
+
   if (!token) {
     res.status(401).json({ error: 'Authentication required' });
     return;

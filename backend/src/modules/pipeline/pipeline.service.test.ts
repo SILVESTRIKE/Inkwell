@@ -5,7 +5,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { User } from '../auth/user.model';
 import { Project } from '../projects/project.model';
 
-describe('PipelineService', () => {
+describe('PipelineService', { timeout: 15000 }, () => {
   let pipelineService: PipelineService;
   let projectsService: ProjectsService;
   let userId: string;

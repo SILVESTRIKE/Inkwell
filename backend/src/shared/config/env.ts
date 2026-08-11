@@ -30,7 +30,10 @@ export const getGeminiApiKeys = (): string[] => {
   }
 
   if (parsedEnv.GEMINI_API_KEY && parsedEnv.GEMINI_API_KEY.trim()) {
-    keysSet.add(parsedEnv.GEMINI_API_KEY.trim());
+    parsedEnv.GEMINI_API_KEY.split(',')
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0)
+      .forEach((k) => keysSet.add(k));
   }
 
   // Also check individual environment variables GEMINI_API_KEY_1, GEMINI_API_KEY_2, etc.

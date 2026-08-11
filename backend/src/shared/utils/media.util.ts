@@ -16,22 +16,37 @@ const transformPaths = (data: any, baseUrl: string, parentData?: any): any => {
   };
 
   if (typeof obj.mediaPath === 'string') {
-    obj.mediaUrl = createUrl(obj.mediaPath);
+    if (obj.mediaPath.startsWith('/api/media') || obj.mediaPath.startsWith('api/media')) {
+      obj.mediaUrl = createUrl(obj.mediaPath);
+    } else {
+      const pathSegment = obj.mediaPath.startsWith('/') ? obj.mediaPath : `/${obj.mediaPath}`;
+      obj.mediaUrl = createUrl(`/api/media/files${pathSegment}`);
+    }
   }
 
   if (typeof obj.portraitFilename === 'string') {
-    const pId = obj.projectId || parentData?.id || parentData?._id;
-    if (pId) {
-      const cleanPid = typeof pId === 'object' ? pId.toString() : pId;
-      obj.portraitUrl = createUrl(`/api/media/files/${cleanPid}/${obj.portraitFilename}`);
+    if (obj.portraitFilename.includes('/')) {
+      const cleanPath = obj.portraitFilename.startsWith('/') ? obj.portraitFilename : `/${obj.portraitFilename}`;
+      obj.portraitUrl = createUrl(`/api/media/files${cleanPath}`);
+    } else {
+      const pId = obj.projectId || parentData?.id || parentData?._id;
+      if (pId) {
+        const cleanPid = typeof pId === 'object' ? pId.toString() : pId;
+        obj.portraitUrl = createUrl(`/api/media/files/${cleanPid}/${obj.portraitFilename}`);
+      }
     }
   }
 
   if (typeof obj.illustrationFilename === 'string') {
-    const pId = obj.projectId || parentData?.id || parentData?._id;
-    if (pId) {
-      const cleanPid = typeof pId === 'object' ? pId.toString() : pId;
-      obj.illustrationUrl = createUrl(`/api/media/files/${cleanPid}/${obj.illustrationFilename}`);
+    if (obj.illustrationFilename.includes('/')) {
+      const cleanPath = obj.illustrationFilename.startsWith('/') ? obj.illustrationFilename : `/${obj.illustrationFilename}`;
+      obj.illustrationUrl = createUrl(`/api/media/files${cleanPath}`);
+    } else {
+      const pId = obj.projectId || parentData?.id || parentData?._id;
+      if (pId) {
+        const cleanPid = typeof pId === 'object' ? pId.toString() : pId;
+        obj.illustrationUrl = createUrl(`/api/media/files/${cleanPid}/${obj.illustrationFilename}`);
+      }
     }
   }
 

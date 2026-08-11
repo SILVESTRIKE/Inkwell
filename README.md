@@ -69,9 +69,11 @@ Run backend and frontend test suites in one command:
   - Structured logging with `winston` and optional Loki transport (`winston-loki`).
   - Prometheus metrics (`prom-client`) exposing runtime and request metrics at `/metrics`.
   - Grafana dashboard service in Docker Compose.
-- **Data, Locks & Cleanup:**
+- **Data, Locks & Media Storage:**
   - MongoDB is the durable store for users, projects, and step output.
   - Redis manages short-lived step locks (`lock:project:<id>:step:<n>`) with TTL to guarantee no duplicate Gemini calls across tabs or refreshes.
+  - Media files are stored in date-structured subdirectories (`uploads/images/YYYY/MM/`) on disk with relative path MongoDB persistence and full URL prefixing (`http://localhost:4000/api/media/files/...`).
+  - Run `npm run check-models` in `backend/` to query all available Gemini models for your API key.
   - Background cron job (`node-cron`) cleans up storage files older than retention policy.
 
 ## Project Structure

@@ -3,13 +3,18 @@ import { GeminiClient } from '../../../shared/gemini/gemini.client';
 import { saveProjectFile } from '../../../shared/storage/file.storage';
 import { BadRequestError } from '../../../shared/errors';
 
+import { runChaptersStep } from './chapters.step';
+
 export async function runIllustrationsStep(
   project: IProject,
   geminiClient: GeminiClient
 ): Promise<IChapterOutput[]> {
-  const chapters = project.outputs.chapters || [];
+  let chapters = project.outputs.chapters || [];
   if (chapters.length === 0) {
-    throw new BadRequestError('Chapters step must be completed before generating illustrations');
+    chapters = await runChaptersStep(project, geminiClient);
+    project.outputs.chapters = chapters;
+    project.markModified('outputs.chapters');
+    await project.save();
   }
 
   const artStyle = project.outputs.style?.styleName || 'Classic Storybook';
@@ -25,11 +30,11 @@ export async function runIllustrationsStep(
       characterDescriptions: charDescs,
     });
 
-    await saveProjectFile(project._id.toString(), filename, imageBuffer);
+    const savedPath = await saveProjectFile(project._id.toString(), filename, imageBuffer);
 
     updatedChapters.push({
       ...ch,
-      illustrationFilename: filename,
+      illustrationFilename: savedPath,
     });
   }
 
