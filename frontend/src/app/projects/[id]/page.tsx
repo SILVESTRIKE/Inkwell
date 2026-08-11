@@ -154,7 +154,7 @@ export default function ProjectDetailPage() {
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
               {project.title}
               <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 capitalize">
-                {project.overallStatus.replace('_', ' ')}
+                {(project.overallStatus || 'draft').replace('_', ' ')}
               </span>
             </h2>
             <p className="text-xs text-slate-400">

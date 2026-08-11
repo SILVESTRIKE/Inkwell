@@ -119,7 +119,7 @@ export default function ProjectsPage() {
                     <span
                       className={`text-xs px-2.5 py-1 rounded-full font-medium border capitalize shrink-0 ${statusColor}`}
                     >
-                      {project.overallStatus.replace('_', ' ')}
+                      {(project.overallStatus || 'draft').replace('_', ' ')}
                     </span>
                   </div>
 
