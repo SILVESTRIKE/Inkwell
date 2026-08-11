@@ -9,6 +9,7 @@ const projectsService = new ProjectsService();
 export class MediaController {
   async serveMediaFile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      const { projectId, filename } = req.params as { projectId?: string; filename?: string };
       const wildcardPath = (req.params as any)[0];
       const relativeOrFileName = wildcardPath || (projectId && filename ? `${projectId}/${filename}` : filename);
 
