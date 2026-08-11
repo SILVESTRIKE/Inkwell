@@ -191,7 +191,7 @@ export default function ProjectDetailPage() {
       )}
 
       {/* Stepper Header */}
-      <Stepper stepStates={project.stepStates} currentStepNumber={currentStepNumber} />
+      <Stepper stepStates={stepStates} currentStepNumber={currentStepNumber} />
 
       {/* In-Progress State Banner (§4.3 Requirement) */}
       {runningStep && (
