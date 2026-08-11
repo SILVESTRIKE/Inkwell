@@ -136,6 +136,4 @@ dist
 .pnp.*
 # Storage & uploaded media files
 uploads/
-storage/
 backend/uploads/
-backend/storage/
