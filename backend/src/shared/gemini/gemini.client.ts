@@ -12,13 +12,14 @@ export interface GeminiImageOptions {
   prompt: string;
   artStyle?: string;
   characterDescriptions?: string[];
+  characterPortraits?: Buffer[];
 }
 
 export class GeminiClient {
   private apiKeys: string[] = [];
   private currentKeyIndex: number = 0;
   private textModel: string = 'gemini-3.6-flash';
-  private imageModel: string = 'imagen-4.0-generate-001';
+  private imageModel: string = 'gemini-3.1-flash-image';
 
   constructor(apiKeys?: string | string[]) {
     if (Array.isArray(apiKeys)) {
@@ -38,41 +39,44 @@ export class GeminiClient {
     return key;
   }
 
-  // Upload book text or create Cached Content reference once
-  async uploadOrCacheBookText(bookText: string): Promise<string> {
-    const apiKey = this.getNextApiKey();
-    if (!apiKey) {
-      return 'mock-cached-content-id';
+  // Upload or retrieve cached context for book text
+  async uploadOrCacheBookText(bookText: string): Promise<string | undefined> {
+    if (this.apiKeys.length === 0) {
+      return undefined;
     }
 
+    const apiKey = this.getNextApiKey();
+    const url = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${apiKey}`;
+
+    const requestBody = {
+      model: `models/${this.textModel}`,
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `Book Text:\n${bookText}` }],
+        },
+      ],
+      ttl: '3600s',
+    };
+
     try {
-      // Use Gemini CachedContents API v1beta to store book text once
-      const url = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${apiKey}`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: `models/${this.textModel}`,
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `Book Text:\n${bookText}` }],
-            },
-          ],
-          ttl: '3600s', // 1 hour TTL
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        console.warn('Gemini CachedContent creation failed, falling back to direct context string:', await response.text());
-        return '';
+        const errText = await response.text();
+        logger.warn(`Gemini CachedContent creation failed, falling back to direct context string: ${errText}`);
+        return undefined;
       }
 
       const data = await response.json();
-      return data.name || '';
-    } catch (err) {
-      console.warn('Gemini uploadOrCacheBookText error:', err);
-      return '';
+      return data.name;
+    } catch (err: any) {
+      logger.warn(`Failed to create Gemini cached content (${err.message}). Falling back to full prompt injection.`);
+      return undefined;
     }
   }
 

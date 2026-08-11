@@ -79,9 +79,27 @@ Claude initially saved files to flat project directories (`storage/:projectId/:f
 
 Cost accepted: Requires wildcard path resolution (`/api/media/files/*`) and URL prefix transformation in `media.util.ts`, but prevents single-folder disk bloat and cleanly handles browser image authentication.
 
-## Gemini Model Selection (Gemini 3.6 Flash & Imagen 4)
+## Gemini Model Selection (Gemini 3.6 Flash & Gemini 3.1 Flash Image / Nano Banana)
 
-We updated text extraction to `gemini-3.6-flash` for high-speed structured JSON parsing and context caching support. For image generation, we selected `imagen-4.0-generate-001` (Imagen 4) with automated fallback handling to local placeholder buffers if the API key lacks image generation entitlements.
+We initially attempted `imagen-4.0-generate-001` via `:predict`. However, Google deprecated standalone Imagen endpoints for AI Studio keys. We corrected this by selecting **`gemini-3.1-flash-image`** (Nano Banana family) invoked via `generateContent`, which natively supports inline image generation and multimodal input parts.
+
+Cost accepted: Requires parsing base64 `inlineData` parts from candidate responses rather than single predict payloads, but restores active Gemini image model support.
+
+## Explicit API Error Propagation vs. Silent Mock Swallowing
+
+Claude initially caught all API errors and quietly returned mock placeholder buffers. I overrode this because silent error swallowing hides real API quota/network failures and prevents the user from exercising manual step retries (§4.3). We updated `GeminiClient` to throw live API errors directly so `pipeline.service.ts` catches them, updates the step status to `'failed'`, and logs an audit entry.
+
+Cost accepted: Step failures are explicitly exposed to the user, but the pipeline retry workflow works as designed without fake successes.
+
+## Multimodal Character Portrait Consistency in Illustrations
+
+To satisfy the specification requirement of reusing character portraits so characters stay visually consistent (§03), `illustrations.step.ts` reads the Step 3 character portrait `.jpg` files from disk and passes their binary buffers into `geminiClient.generateImage({ characterPortraits })`. `gemini-3.1-flash-image` processes these portrait images as `inlineData` input parts alongside the scene prompt.
+
+Cost accepted: Increases prompt payload size, but achieves true visual character consistency across chapter scene illustrations.
+
+## BullMQ 1-Attempt Policy & Stale Lock Recovery Guard
+
+To strictly obey the brief ("Never auto-retry a Gemini call in a loop — retries are user-triggered only"), we updated BullMQ default job options to `attempts: 1`. Additionally, we updated `recoverStuckStep` to verify whether a step is actively locked or in a `running`/`failed` state before allowing manual state clearing, preventing race conditions between background workers and manual resets.
 
 ---
 

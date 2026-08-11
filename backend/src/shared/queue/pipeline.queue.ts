@@ -20,11 +20,7 @@ export interface PipelineJobData {
 export const pipelineQueue = new Queue<PipelineJobData>('pipeline-steps', {
   connection: redisOptions,
   defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
+    attempts: 1, // Retries are user-triggered only per spec requirement
     removeOnComplete: 100,
     removeOnFail: 200,
   },

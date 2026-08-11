@@ -4,6 +4,7 @@ import { PipelineService } from './pipeline.service';
 import { ProjectsService } from '../projects/projects.service';
 import { User } from '../auth/user.model';
 import { Project } from '../projects/project.model';
+import { GeminiClient } from '../../shared/gemini/gemini.client';
 
 describe('PipelineService', { timeout: 15000 }, () => {
   let pipelineService: PipelineService;
@@ -12,14 +13,19 @@ describe('PipelineService', { timeout: 15000 }, () => {
   let projectId: string;
 
   beforeAll(async () => {
+    // Clear API keys so unit tests execute instant mock path (<1s duration)
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_API_KEYS;
+
     // Connect to in-memory / local mongodb test instance
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/book-illustration-test';
+    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/inkwell_test';
     try {
       await mongoose.connect(mongoUri);
     } catch {
       // ignore if already connected
     }
     pipelineService = new PipelineService();
+    (pipelineService as any).geminiClient = new GeminiClient([]);
     projectsService = new ProjectsService();
   });
 
