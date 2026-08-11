@@ -13,7 +13,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().default('development-jwt-secret-key-12345'),
   GEMINI_API_KEY: z.string().optional().default(''),
   GEMINI_API_KEYS: z.string().optional().default(''),
-  STORAGE_DIR: z.string().default('./storage'),
+  STORAGE_DIR: z.string().default('./uploads'),
   LOCK_TTL_SECONDS: z.coerce.number().default(60),
 });
 
