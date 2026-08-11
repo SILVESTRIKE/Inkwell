@@ -38,19 +38,18 @@ export class PipelineService {
     project.currentStepNumber = stepNumber;
     await project.save();
 
-    // Add job to BullMQ Queue
-    const job = await pipelineQueue.add(`step-${stepNumber}`, {
-      userId,
-      projectId,
-      stepNumber,
-      userStyle: options?.userStyle,
+    // Direct non-blocking background execution protected by Redis SET NX lock
+    setImmediate(() => {
+      this.executeStepDirect(userId, projectId, stepNumber, options).catch((err) => {
+        logger.error(`[PipelineService] Step ${stepNumber} execution failed: ${err.message}`);
+      });
     });
 
-    logger.info(`Enqueued step ${stepNumber} for project ${projectId} into BullMQ job ${job.id}`);
+    logger.info(`Started step ${stepNumber} for project ${projectId} in background task`);
 
     return {
-      message: `Step ${stepNumber} queued for execution`,
-      jobId: job.id!,
+      message: `Step ${stepNumber} started successfully`,
+      jobId: `step-${stepNumber}-${Date.now()}`,
       project,
     };
   }
