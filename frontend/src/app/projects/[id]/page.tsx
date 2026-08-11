@@ -132,8 +132,11 @@ export default function ProjectDetailPage() {
 
   // Determine current active or upcoming step number
   const stepStates = project.stepStates || [];
-  const nextPendingStep = stepStates.find(s => s.status === 'pending' || s.status === 'failed');
-  const currentStepNumber = runningStep || (nextPendingStep ? nextPendingStep.stepNumber : 5);
+  const nextPendingStep = [1, 2, 3, 4, 5].find(stepNum => {
+    const state = stepStates.find(s => s.stepNumber === stepNum);
+    return !state || state.status === 'pending' || state.status === 'failed';
+  }) || 5;
+  const currentStepNumber = runningStep || nextPendingStep;
 
   const currentStepState: StepState | undefined = stepStates.find(
     s => s.stepNumber === currentStepNumber
