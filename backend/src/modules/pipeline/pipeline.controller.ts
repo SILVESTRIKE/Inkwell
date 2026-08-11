@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../shared/middleware/auth.middleware';
 import { PipelineService } from './pipeline.service';
+import { transformMediaURLs } from '../../shared/utils/media.util';
 
 const pipelineService = new PipelineService();
 
@@ -13,7 +14,10 @@ export class PipelineController {
       const { userStyle } = req.body || {};
 
       const result = await pipelineService.enqueueStep(userId, projectId, stepNumber, { userStyle });
-      res.status(202).json(result);
+      res.status(202).json({
+        ...result,
+        project: transformMediaURLs(req, result.project),
+      });
     } catch (err) {
       next(err);
     }
@@ -26,7 +30,7 @@ export class PipelineController {
       const stepNumber = parseInt(req.params.step, 10);
 
       const project = await pipelineService.recoverStuckStep(userId, projectId, stepNumber);
-      res.json(project);
+      res.json(transformMediaURLs(req, project));
     } catch (err) {
       next(err);
     }
