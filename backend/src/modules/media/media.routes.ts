@@ -7,6 +7,6 @@ const controller = new MediaController();
 
 router.use(requireAuth as any);
 
-router.get('/:projectId/:filename', (req, res, next) => controller.serveMediaFile(req as any, res, next));
+router.get('/files/:projectId/:filename', (req, res, next) => controller.serveMediaFile(req as any, res, next));
 
 export default router;
