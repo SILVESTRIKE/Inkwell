@@ -19,6 +19,10 @@ const envSchema = z.object({
 
 const parsedEnv = envSchema.parse(process.env);
 
+if (process.env.NODE_ENV === 'test' && (!process.env.MONGO_URI || parsedEnv.MONGO_URI.endsWith('/inkwell'))) {
+  parsedEnv.MONGO_URI = 'mongodb://localhost:27017/inkwell_test';
+}
+
 export const getGeminiApiKeys = (): string[] => {
   const keysSet = new Set<string>();
 
