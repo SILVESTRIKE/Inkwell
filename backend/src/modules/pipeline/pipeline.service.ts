@@ -79,18 +79,21 @@ export class PipelineService {
         case 1: {
           const styleOutput = await runStyleStep(project, this.geminiClient, options);
           project.outputs.style = styleOutput;
+          project.markModified('outputs.style');
           stepResult = styleOutput;
           break;
         }
         case 2: {
           const charsOutput = await runCharactersStep(project, this.geminiClient);
           project.outputs.characters = charsOutput;
+          project.markModified('outputs.characters');
           stepResult = charsOutput;
           break;
         }
         case 3: {
           const portraitsOutput = await runPortraitsStep(project, this.geminiClient);
           project.outputs.characters = portraitsOutput;
+          project.markModified('outputs.characters');
           stepResult = portraitsOutput;
 
           // Record generated character portraits into Media collection
@@ -111,12 +114,14 @@ export class PipelineService {
         case 4: {
           const chaptersOutput = await runChaptersStep(project, this.geminiClient);
           project.outputs.chapters = chaptersOutput;
+          project.markModified('outputs.chapters');
           stepResult = chaptersOutput;
           break;
         }
         case 5: {
           const illustrationsOutput = await runIllustrationsStep(project, this.geminiClient);
           project.outputs.chapters = illustrationsOutput;
+          project.markModified('outputs.chapters');
           stepResult = illustrationsOutput;
 
           // Record generated chapter illustrations into Media collection
