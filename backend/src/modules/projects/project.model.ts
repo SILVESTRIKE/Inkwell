@@ -79,7 +79,7 @@ const StepStateSchema = new Schema({
 
 const ProjectSchema: Schema = new Schema(
   {
-    userId: { type: String, required: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     title: { type: String, required: true },
     bookText: { type: String, required: true },
     cachedContentName: { type: String },
