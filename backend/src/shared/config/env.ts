@@ -15,6 +15,8 @@ const envSchema = z.object({
   GEMINI_API_KEYS: z.string().optional().default(''),
   STORAGE_DIR: z.string().default('./uploads'),
   LOCK_TTL_SECONDS: z.coerce.number().default(60),
+  MAX_CHARACTERS: z.coerce.number().default(2),
+  MAX_CHAPTERS: z.coerce.number().default(1),
 });
 
 const parsedEnv = envSchema.parse(process.env);

@@ -1,6 +1,7 @@
 import { IProject, IChapterOutput } from '../../projects/project.model';
 import { GeminiClient } from '../../../shared/gemini/gemini.client';
 import { BadRequestError } from '../../../shared/errors';
+import { env } from '../../../shared/config/env';
 
 export async function runChaptersStep(
   project: IProject,
@@ -13,8 +14,9 @@ export async function runChaptersStep(
 
   const artStyle = project.outputs.style?.styleName || 'Classic Storybook';
   const charNames = characters.map(c => `${c.name} (${c.description})`).join(', ');
+  const maxCap = env.MAX_CHAPTERS;
 
-  const prompt = `Propose 1 main chapter illustration prompt for the book text. The illustration should feature the characters: ${charNames}. Ensure the prompt specifies their appearance and the setting in detail.\n\nArt style constraint: ${artStyle}.\n\nReturn a JSON array containing exactly 1 object with keys: "chapterTitle", "description", "illustrationPrompt".`;
+  const prompt = `Propose ${maxCap} main chapter illustration prompt(s) for the book text. The illustration should feature the characters: ${charNames}. Ensure the prompt specifies their appearance and the setting in detail.\n\nArt style constraint: ${artStyle}.\n\nReturn a JSON array containing ${maxCap} object(s) with keys: "chapterTitle", "description", "illustrationPrompt".`;
 
   const schema = {
     type: 'ARRAY',
@@ -58,10 +60,10 @@ export async function runChaptersStep(
     ];
   }
 
-  // HARD CONSTRAINT: Max 1 chapter enforced server-side
-  const maxOneChapter = rawList.slice(0, 1);
+  // HARD CONSTRAINT: Max chapters cap enforced server-side
+  const cappedChapters = rawList.slice(0, env.MAX_CHAPTERS);
 
-  return maxOneChapter.map((ch: any, idx: number) => ({
+  return cappedChapters.map((ch: any, idx: number) => ({
     id: `chap_${idx + 1}_${Date.now()}`,
     chapterTitle: ch.chapterTitle || 'Chapter 1',
     description: ch.description || 'Chapter scene description',
