@@ -95,6 +95,8 @@ We updated text extraction to `gemini-3.6-flash` for high-speed structured JSON 
 | **Context Management** | **Gemini Context Caching** | Re-sending full text per call | Drastically reduces API token consumption per pipeline step; requires fallback if caching is unavailable on free-tier keys. |
 | **Error Handling** | **Domain Error Hierarchy (`CustomError`)** | Generic `AppError(status, msg)` | Ensures standardized error JSON payloads (`{ errors: [...] }`) with field-level reporting across all routes. |
 | **Database Storage** | **MongoDB + Mongoose** | Raw JSON files on disk | Provides ACID compliance, schema validation, index performance, and avoids file-system race conditions under concurrent writes. |
+| **Media Directory Layout** | **Date-Structured (`uploads/images/YYYY/MM/`)** | Flat project directory (`storage/:id/`) | Prevents single-folder disk bloat; requires wildcard route matching and URL path prefix transformation. |
+| **Image Authentication** | **Query Token (`?token=...`) + Cookie / Bearer** | Pure Bearer header only | Enables standard browser `<img>` tags to render authenticated media without 401 Unauthorized errors. |
 | **Observability** | **Winston + Loki + Prometheus + Grafana** | Console logging (`console.log`) | Provides full production metrics, HTTP duration histograms (`/metrics`), and log aggregation in Docker Compose. |
 
 
