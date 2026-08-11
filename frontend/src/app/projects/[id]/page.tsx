@@ -52,7 +52,7 @@ export default function ProjectDetailPage() {
       const data = await api.getProject(projectId);
       setProject(data);
 
-      const activeStep = data.stepStates.find(s => s.status === 'running');
+      const activeStep = data.stepStates?.find(s => s.status === 'running');
       if (activeStep) {
         setRunningStep(activeStep.stepNumber);
       } else {
@@ -131,10 +131,11 @@ export default function ProjectDetailPage() {
   }
 
   // Determine current active or upcoming step number
-  const nextPendingStep = project.stepStates.find(s => s.status === 'pending' || s.status === 'failed');
+  const stepStates = project.stepStates || [];
+  const nextPendingStep = stepStates.find(s => s.status === 'pending' || s.status === 'failed');
   const currentStepNumber = runningStep || (nextPendingStep ? nextPendingStep.stepNumber : 5);
 
-  const currentStepState: StepState | undefined = project.stepStates.find(
+  const currentStepState: StepState | undefined = stepStates.find(
     s => s.stepNumber === currentStepNumber
   );
 
