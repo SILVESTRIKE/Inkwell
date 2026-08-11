@@ -15,13 +15,14 @@ const STEP_LABELS = [
   '5. Illustrations',
 ];
 
-export const Stepper: React.FC<StepperProps> = ({ stepStates, currentStepNumber }) => {
+export const Stepper: React.FC<StepperProps> = ({ stepStates = [], currentStepNumber }) => {
+  const safeStepStates = stepStates || [];
   return (
     <div className="w-full py-4 border-b border-slate-800 bg-slate-900/50 px-6 rounded-xl mb-6">
       <div className="flex items-center justify-between">
         {STEP_LABELS.map((label, idx) => {
           const stepNum = idx + 1;
-          const state = stepStates.find(s => s.stepNumber === stepNum);
+          const state = safeStepStates.find(s => s.stepNumber === stepNum);
           const status = state?.status || 'pending';
           const isCurrent = currentStepNumber === stepNum;
 
