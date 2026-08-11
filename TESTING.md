@@ -27,26 +27,26 @@ Focus:
 ```
 === Running Backend Tests ===
 
- ✓ src/shared/utils/media.util.test.ts (3 tests) 7ms
- ✓ src/shared/errors/custom.error.test.ts (6 tests) 11ms
- ✓ src/shared/locks/step.lock.test.ts (3 tests) 46ms
- ✓ src/modules/auth/auth.service.test.ts (4 tests) 138ms
- ✓ src/modules/pipeline/pipeline.service.test.ts (4 tests) 15497ms
+ ✓ src/shared/utils/media.util.test.ts (3 tests) 6ms
+ ✓ src/shared/errors/custom.error.test.ts (6 tests) 7ms
+ ✓ src/shared/locks/step.lock.test.ts (3 tests) 37ms
+ ✓ src/modules/auth/auth.service.test.ts (4 tests) 171ms
+ ✓ src/modules/pipeline/pipeline.service.test.ts (4 tests) 1601ms
 
  Test Files  5 passed (5)
       Tests  20 passed (20)
-   Start at  19:42:13
-   Duration  17.17s (transform 486ms, setup 0ms, import 2.53s, tests 15.70s, environment 1ms)
+   Start at  20:32:32
+   Duration  3.18s (transform 422ms, setup 0ms, import 2.32s, tests 1.82s, environment 1ms)
 
 === Running Frontend Tests ===
 
- ✓ src/components/stepper/Stepper.test.tsx (1 test) 55ms
- ✓ src/components/layout/Header.test.tsx (2 tests) 79ms
+ ✓ src/components/stepper/Stepper.test.tsx (1 test) 68ms
+ ✓ src/components/layout/Header.test.tsx (2 tests) 64ms
 
  Test Files  2 passed (2)
       Tests  3 passed (3)
-   Start at  12:02:55
-   Duration  3.80s (transform 477ms, setup 552ms, import 1.56s, tests 135ms, environment 3.50s)
+   Start at  20:32:45
+   Duration  2.82s (transform 265ms, setup 506ms, import 878ms, tests 132ms, environment 2.00s)
 
 === All Tests Completed Successfully ===
 ```

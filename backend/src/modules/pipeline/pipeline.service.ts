@@ -1,6 +1,6 @@
 import { Project, IProject } from '../projects/project.model';
 import { BadRequestError, NotFoundError, ConflictError } from '../../shared/errors';
-import { acquireStepLock, releaseStepLock } from '../../shared/locks/step.lock';
+import { acquireStepLock, releaseStepLock, isStepLocked } from '../../shared/locks/step.lock';
 import { GeminiClient } from '../../shared/gemini/gemini.client';
 import { pipelineQueue } from '../../shared/queue/pipeline.queue';
 import { logger } from '../../shared/logger/logger';
@@ -225,6 +225,12 @@ export class PipelineService {
     const stepState = project.stepStates.find(s => s.stepNumber === stepNumber);
     if (!stepState) {
       throw new BadRequestError('Invalid step number', 'stepNumber');
+    }
+
+    // Staleness / Lock Guard: Only recover if step is actually running, failed, or locked
+    const isLocked = await isStepLocked(projectId, stepNumber);
+    if (stepState.status !== 'running' && !isLocked && stepState.status !== 'failed') {
+      throw new BadRequestError(`Step ${stepNumber} is currently '${stepState.status}' and does not require stuck-state recovery.`);
     }
 
     await releaseStepLock(projectId, stepNumber);
