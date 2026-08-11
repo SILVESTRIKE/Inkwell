@@ -97,7 +97,7 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map(project => {
-            const completedCount = project.stepStates.filter(s => s.status === 'done').length;
+            const completedCount = (project.stepStates || []).filter(s => s.status === 'done').length;
             const statusColor =
               project.overallStatus === 'done'
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
