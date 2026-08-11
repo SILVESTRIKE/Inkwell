@@ -1,63 +1,56 @@
-# Git Branching & Conventional Commit Rules
+# Inkwell — Project Rules & Agent Instructions
 
-Follow these rules for git commit formatting, branch naming, and backend architecture conventions across all workspaces.
+This document is the workspace customization root (`.agents/AGENTS.md`) for AI agent assistance across the Inkwell repository.
 
 ---
 
-## 1. Conventional Commits Standard
+## 1. Core Project Hard Constraints
+
+1. **Server-Side Cap Enforcement**: Adult characters max 2 (`env.MAX_CHARACTERS`), chapter illustrations max 1 (`env.MAX_CHAPTERS`). Always enforce at the API/pipeline layer.
+2. **Concurrency Locks**: Never allow duplicate Gemini calls for the same step in-flight. Enforce via Redis `SET NX` locks with 60s TTL (`lock:project:<id>:step:<n>`).
+3. **Resumable State**: Projects persist step outputs and step status (`pending | running | done | failed`) in MongoDB (`Project.stepStates`). Server restart or refresh mid-pipeline displays current state and polling resumes cleanly.
+4. **Stuck-State Recovery**: `recoverStuckStep` verifies lock staleness/running status before releasing locks to prevent stomping in-flight steps.
+5. **Context Caching**: Upload book text once using Gemini `cachedContents` API v1beta and reuse `cachedContentName` across text extraction steps.
+6. **No Auto-Retry Loops**: Gemini API retries are 100% user-triggered (§4.3). Never auto-retry in background loops.
+7. **Explicit Error Propagation**: Never swallow real Gemini API errors with silent mock fallbacks. Failures must throw directly so step status transitions to `'failed'`, enabling user retries.
+8. **Multimodal Character Consistency**: Pass Step 3 portrait `.jpg` binary buffers into `illustrations.step.ts` as `inlineData` image parts to `gemini-3.1-flash-image` (Nano Banana) alongside scene prompts.
+9. **Media Storage**: Store uploaded book text and generated images in date-structured paths (`uploads/images/YYYY/MM/<projectId>_<filename>`) served via `/api/media/files/...` with JWT query auth (`?token=...`).
+
+---
+
+## 2. Tech Stack & Architecture
+
+- **Backend**: Node.js, Express (Feature-module layout: `auth/`, `projects/`, `pipeline/`, `media/`)
+- **Frontend**: Next.js (App Router, TypeScript), Tailwind CSS (Literary/Analog theme tokens)
+- **Database**: MongoDB (Mongoose) for durable state; Redis for `SET NX` step-locks.
+- **AI Provider**: Google Gemini API (`gemini-3.6-flash` for text, `gemini-3.1-flash-image` for images).
+- **Testing**: Vitest for backend & frontend component tests.
+
+---
+
+## 3. Coding Conventions
+
+- **TypeScript Strict Mode**: Explicit typing across backend and frontend. No unhandled `any`.
+- **Validation**: Schema validation with `Zod` at boundary endpoints.
+- **Error Handling**: Domain error classes (`BadRequestError`, `NotFoundError`, `ConflictError`) mapped via central Express `errorHandler` middleware.
+- **Documentation Deliverables**: Maintain `docs/DECISIONS.md`, `docs/TESTING.md`, and `README.md` co-located with code changes.
+
+---
+
+## 4. Git Branching & Conventional Commit Rules
 
 Format: `<type>(<scope>): <subject>`
 
 ### Types:
-- `feat`: New feature addition
+- `feat`: New feature
 - `fix`: Bug fix
+- `refactor`: Code restructuring (no feature/fix change)
 - `docs`: Documentation updates only
-- `style`: Formatting, missing semi colons, white spaces (no code logic change)
-- `refactor`: Code refactoring (no feature addition or bug fix)
+- `style`: Formatting changes (no logic change)
 - `test`: Adding or updating tests
-- `chore`: Build tasks, package configs, script maintenance
+- `chore`: Build/script maintenance
 
-### Scope (Optional):
-Module or component name (e.g., `auth`, `projects`, `pipeline`, `ui`, `api`).
-
-### Subject Rules:
-- Short description (<= 50 characters)
-- Use imperative mood in present tense (e.g., `add feature`, not `added feature`)
-- Do NOT capitalize the first letter
-- Do NOT end with a period
-
----
-
-## 2. Commit Body (Optional)
-- Separate subject from body with a blank line.
-- Wrap lines at ~72 characters.
-- Focus on explaining *why* the change was made, not just *what*.
-
----
-
-## 3. Branch Naming Convention
-
-Format: `<type>/<short-description>`
-
-Replace spaces with `-`, colons with `/`.
-
-Examples:
-- `feat/auth-jwt-refresh`
-- `feat/auth-schema`
-- `fix/pipeline-lock-ttl`
-
----
-
-## 4. Backend Schema & Controller Rules
-
-- **Database Schemas**: Always ensure all Mongoose/Prisma schemas include automatic timestamps (`createdAt`, `updatedAt`) and a soft-delete field (`isDeleted?: boolean`).
-- **Controller Layer**: Controllers MUST NOT contain business logic. Controllers must only handle parsing/validating HTTP requests, passing arguments to domain services, and returning HTTP responses.
-
----
-
-## 5. Feature-Isolated Branching & Integration Workflow
-
-1. **Feature Isolation**: Develop every new feature or refactor on its own dedicated feature branch (e.g. `feat/<short-description>` or `fix/<short-description>`), branched off `dev` or `main`.
-2. **Atomic Commits & Remote Push**: After finishing a feature, run build/tests, commit changes using Conventional Commits, and push the branch to remote (`git push origin <branch-name>`).
-3. **Integration into `dev` Branch**: Merge completed feature branches into the `dev` integration branch (`git checkout dev && git merge <branch-name>`), then push `dev` to remote (`git push origin dev`).
-
+### Branch Naming:
+- `feat/<short-description>`
+- `fix/<short-description>`
+- Develop on dedicated feature branches, then merge into `dev` or `main`.

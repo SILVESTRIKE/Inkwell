@@ -22,11 +22,11 @@ Claude proposed button-disabled attributes in the frontend to prevent double-cli
 
 Cost accepted: If the server crashes hard mid-call, the lock stays in Redis for up to 60 seconds before expiring, but users are provided a "Reset Stuck State" affordance to clear it manually if needed.
 
-## Asynchronous Job Processing via BullMQ Queue & Bull-Board UI
+## Direct Non-Blocking Background Execution & Zero Auto-Retries
 
-While a synchronous HTTP request was sufficient for initial prototype testing, HTTP connections held open for 10–30s+ risk gateway timeouts under real load. We integrated `BullMQ` backed by Redis to handle background pipeline jobs asynchronously. Clicking "Run Step" enqueues a job (`pipelineQueue.add()`) and responds instantly (`202 Accepted`). A background worker process executes Gemini API calls, uploads files to disk, updates Mongo, and supports automatic exponential retries. A visual admin dashboard is mounted at `/admin/queues` using `@bull-board/express`.
+To strictly adhere to the project rules and §4.3 requirement ("Never auto-retry a Gemini call in a loop — retries are user-triggered only"), we simplified the pipeline execution model from BullMQ queues to direct non-blocking background execution using `setImmediate()` protected by Redis `SET NX` locks. Clicking "Run Step" responds immediately (`202 Accepted`) and executes the Gemini call asynchronously in the background.
 
-Cost accepted: Adds BullMQ queue management and background worker execution, but eliminates HTTP timeouts and provides job progress visualization.
+Cost accepted: Eliminates BullMQ worker process overhead while maintaining non-blocking async API responses and atomic lock protection.
 
 ## Strict Rate Limiting (Global, Auth, and Pipeline)
 
@@ -39,7 +39,7 @@ Cost accepted: Rapid consecutive step triggers beyond 5/min return `429 Too Many
 
 ## AI override #1: Enforcing character and chapter caps server-side
 
-Claude initially placed the 2-character and 1-chapter caps inside the frontend UI slice logic. I overrode this because client-side caps can be bypassed or misconfigured, violating the strict API cost bounds requirement (§03). We moved cap enforcement directly into `characters.step.ts` and `chapters.step.ts` on the backend, truncating any Gemini array response exceeding the limits.
+Claude initially placed the 2-character and 1-chapter caps inside the frontend UI slice logic. I overrode this because client-side caps can be bypassed or misconfigured, violating the strict API cost bounds requirement (§03). We moved cap enforcement directly into `characters.step.ts` and `chapters.step.ts` on the backend via `env.MAX_CHARACTERS` and `env.MAX_CHAPTERS`.
 
 Cost accepted: Extra backend validation layer, but API costs are strictly guaranteed regardless of UI changes.
 
@@ -48,12 +48,6 @@ Cost accepted: Extra backend validation layer, but API costs are strictly guaran
 Claude originally drafted prompts that prepended the full book text string on every step call (Style, Characters, Chapters). I overrode this because sending full book text on every step violates constraint #5 and wastes API tokens. We implemented Gemini's `cachedContents` API to upload the book text once when the project is created and reference `cachedContent` across all subsequent pipeline steps.
 
 Cost accepted: Fallback logic is required if Gemini context caching is unsupported on certain free-tier keys, but token consumption per step is reduced dramatically.
-
-## Structured Logging & Observability Stack (Winston, Loki, Prometheus, Grafana)
-
-We added `winston` structured logging alongside `prom-client` and Grafana/Loki integration (`winston-loki`). In development, Winston outputs colorized logs to console. In production, logs are formatted as structured JSON and piped to Loki on port 3100. Prometheus collects HTTP request duration histograms at `/metrics`, rendered via Grafana on port 3001.
-
-Cost accepted: Additional Docker containers for Grafana, Loki, and Prometheus in `docker-compose.yml`, but provides full production observability.
 
 ## Security: HttpOnly Cookies for JWT & Magic Bytes File Validation
 
@@ -90,9 +84,9 @@ We corrected this by:
 
 Cost accepted: Step failures are explicitly exposed to the user and prompt payloads include image bytes, but real Gemini failures correctly trigger the resilience workflow.
 
-## BullMQ 1-Attempt Policy & Stale Lock Recovery Guard
+## Stale Lock Recovery Guard
 
-To strictly obey the brief ("Never auto-retry a Gemini call in a loop — retries are user-triggered only"), we updated BullMQ default job options to `attempts: 1`. Additionally, we updated `recoverStuckStep` to verify whether a step is actively locked or in a `running`/`failed` state before allowing manual state clearing, preventing race conditions between background workers and manual resets.
+We updated `recoverStuckStep` to verify whether a step is actively locked (`isStepLocked`) or in a `running`/`failed` state before allowing manual state clearing, preventing race conditions between background execution and manual resets.
 
 ---
 
@@ -101,14 +95,13 @@ To strictly obey the brief ("Never auto-retry a Gemini call in a loop — retrie
 | Decision Area | Choice Implemented | Alternative Considered | Trade-Off / Reason |
 |---|---|---|---|
 | **Architecture Layout** | **Feature-Module** (`auth/`, `projects/`, `pipeline/`, `media/`) | Layered MVC (`controllers/`, `models/`, `routes/`) | Keeps domain logic co-located per feature. Scalable for adding future pipeline steps without touching global folders. |
-| **Async Execution** | **BullMQ Queue + Worker** | Synchronous HTTP request | Eliminates gateway timeouts during 10-30s image generation calls and allows visual job monitoring via `@bull-board`. |
+| **Async Execution** | **Direct Non-Blocking Async (`setImmediate`)** | Message Queue / BullMQ | Direct non-blocking execution eliminates HTTP timeouts, guarantees zero auto-retry loops, and avoids extra queue worker complexity. |
 | **Concurrency Lock** | **Redis (`SET NX` with 60s TTL)** | Client-side button disabling | Enforces lock at API level across page refreshes, multiple tabs, and concurrent double-clicks. |
 | **Context Management** | **Gemini Context Caching** | Re-sending full text per call | Drastically reduces API token consumption per pipeline step; requires fallback if caching is unavailable on free-tier keys. |
 | **Error Handling** | **Domain Error Hierarchy (`CustomError`)** | Generic `AppError(status, msg)` | Ensures standardized error JSON payloads (`{ errors: [...] }`) with field-level reporting across all routes. |
 | **Database Storage** | **MongoDB + Mongoose** | Raw JSON files on disk | Provides ACID compliance, schema validation, index performance, and avoids file-system race conditions under concurrent writes. |
 | **Media Directory Layout** | **Date-Structured (`uploads/images/YYYY/MM/`)** | Flat project directory (`storage/:id/`) | Prevents single-folder disk bloat; requires wildcard route matching and URL path prefix transformation. |
 | **Image Authentication** | **Query Token (`?token=...`) + Cookie / Bearer** | Pure Bearer header only | Enables standard browser `<img>` tags to render authenticated media without 401 Unauthorized errors. |
-| **Observability** | **Winston + Loki + Prometheus + Grafana** | Console logging (`console.log`) | Provides full production metrics, HTTP duration histograms (`/metrics`), and log aggregation in Docker Compose. |
 
 
 ## If I had one more day
