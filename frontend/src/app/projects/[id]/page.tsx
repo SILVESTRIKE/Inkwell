@@ -85,8 +85,10 @@ export default function ProjectDetailPage() {
       setRunningStep(stepNumber);
       setError('');
       const updated = await api.runStep(projectId, stepNumber, userStyle);
+      // 202 Accepted — job is queued, NOT done.
+      // Set project state (step will show 'running') but keep runningStep
+      // active so the polling loop handles the done/failed transition.
       setProject(updated);
-      setRunningStep(null);
     } catch (err: any) {
       setError(err.message || `Step ${stepNumber} execution failed`);
       setRunningStep(null);
