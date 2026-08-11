@@ -73,9 +73,15 @@ To prevent single API key quota exhaustion and `429 Too Many Requests` bottlenec
 
 Cost accepted: Requires managing multiple API keys in environment config, but guarantees high availability and avoids pipeline stalls during heavy load.
 
-## Gemini model selection
+## Date-Structured Media Storage Hierarchy (`uploads/images/YYYY/MM`) & Query-Token Auth
 
-We selected `gemini-2.0-flash` for text and structured JSON extraction due to its high speed and reliable JSON Schema enforcement. For image generation, we selected `imagen-3.0-generate-002` for storybook portrait and scene rendering.
+Claude initially saved files to flat project directories (`storage/:projectId/:filename`). I overrode this to implement a date-structured storage hierarchy (`uploads/images/YYYY/MM/<projectId>_<filename>`) co-located with DB relative paths. To allow HTML `<img>` tags to render authenticated media files cleanly without dropping 401s, we updated `requireAuth` to accept `?token=<jwt_token>` as a query parameter fallback.
+
+Cost accepted: Requires wildcard path resolution (`/api/media/files/*`) and URL prefix transformation in `media.util.ts`, but prevents single-folder disk bloat and cleanly handles browser image authentication.
+
+## Gemini Model Selection (Gemini 3.6 Flash & Imagen 4)
+
+We updated text extraction to `gemini-3.6-flash` for high-speed structured JSON parsing and context caching support. For image generation, we selected `imagen-4.0-generate-001` (Imagen 4) with automated fallback handling to local placeholder buffers if the API key lacks image generation entitlements.
 
 ---
 

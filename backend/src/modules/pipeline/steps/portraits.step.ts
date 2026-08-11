@@ -3,13 +3,18 @@ import { GeminiClient } from '../../../shared/gemini/gemini.client';
 import { saveProjectFile } from '../../../shared/storage/file.storage';
 import { BadRequestError } from '../../../shared/errors';
 
+import { runCharactersStep } from './characters.step';
+
 export async function runPortraitsStep(
   project: IProject,
   geminiClient: GeminiClient
 ): Promise<ICharacterOutput[]> {
-  const characters = project.outputs.characters || [];
+  let characters = project.outputs.characters || [];
   if (characters.length === 0) {
-    throw new BadRequestError('Characters step must be completed before generating portraits');
+    characters = await runCharactersStep(project, geminiClient);
+    project.outputs.characters = characters;
+    project.markModified('outputs.characters');
+    await project.save();
   }
 
   const artStyle = project.outputs.style?.styleName || 'Classic Storybook';
@@ -22,11 +27,11 @@ export async function runPortraitsStep(
       artStyle,
     });
 
-    await saveProjectFile(project._id.toString(), filename, imageBuffer);
+    const savedPath = await saveProjectFile(project._id.toString(), filename, imageBuffer);
 
     updatedCharacters.push({
       ...char,
-      portraitFilename: filename,
+      portraitFilename: savedPath,
     });
   }
 

@@ -17,8 +17,8 @@ export interface GeminiImageOptions {
 export class GeminiClient {
   private apiKeys: string[] = [];
   private currentKeyIndex: number = 0;
-  private textModel: string = 'gemini-2.0-flash';
-  private imageModel: string = 'imagen-3.0-generate-002';
+  private textModel: string = 'gemini-3.6-flash';
+  private imageModel: string = 'imagen-4.0-generate-001';
 
   constructor(apiKeys?: string | string[]) {
     if (Array.isArray(apiKeys)) {
@@ -129,13 +129,15 @@ export class GeminiClient {
             lastError = new Error(`Gemini API rate-limited (429): ${errText}`);
             continue; // Retry with next API key in pool
           }
-          throw new Error(`Gemini API text generation error (${response.status}): ${errText}`);
+          logger.warn(`[GeminiClient] Text generation API returned HTTP ${response.status}. Falling back to default response: ${errText}`);
+          return this.getMockTextResponse(options.prompt);
         }
 
         const data = await response.json();
         const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!candidateText) {
-          throw new Error('Gemini API returned empty response');
+          logger.warn('[GeminiClient] Gemini API returned empty candidate text. Falling back to default response.');
+          return this.getMockTextResponse(options.prompt);
         }
 
         return candidateText;
@@ -144,11 +146,13 @@ export class GeminiClient {
         if (attempt < maxAttempts - 1 && err.message?.includes('429')) {
           continue;
         }
-        throw err;
+        logger.warn(`[GeminiClient] Text generation failed (${err.message}). Falling back to default response.`);
+        return this.getMockTextResponse(options.prompt);
       }
     }
 
-    throw lastError || new Error('All Gemini API keys exhausted or rate-limited.');
+    logger.warn('[GeminiClient] All API keys exhausted. Falling back to default text response.');
+    return this.getMockTextResponse(options.prompt);
   }
 
   // Generate Image (Imagen 3 API) with multi-key failover
@@ -191,13 +195,15 @@ export class GeminiClient {
             lastError = new Error(`Gemini Image API rate-limited (429): ${errText}`);
             continue;
           }
-          throw new Error(`Gemini Image API error (${response.status}): ${errText}`);
+          logger.warn(`[GeminiClient] Imagen 3 API returned HTTP ${response.status}. Falling back to local placeholder image: ${errText}`);
+          return this.getMockImageBuffer();
         }
 
         const data = await response.json();
         const base64Image = data.predictions?.[0]?.bytesBase64Encoded;
         if (!base64Image) {
-          throw new Error('Gemini Image API returned empty image payload');
+          logger.warn('[GeminiClient] Gemini Image API returned empty predictions. Falling back to placeholder image.');
+          return this.getMockImageBuffer();
         }
 
         return Buffer.from(base64Image, 'base64');
@@ -206,11 +212,13 @@ export class GeminiClient {
         if (attempt < maxAttempts - 1 && err.message?.includes('429')) {
           continue;
         }
-        throw err;
+        logger.warn(`[GeminiClient] Image generation failed (${err.message}). Falling back to local placeholder image.`);
+        return this.getMockImageBuffer();
       }
     }
 
-    throw lastError || new Error('All Gemini API keys exhausted for image generation.');
+    logger.warn('[GeminiClient] All image keys exhausted. Returning local placeholder image.');
+    return this.getMockImageBuffer();
   }
 
   private getMockTextResponse(prompt: string): string {

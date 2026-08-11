@@ -45,6 +45,7 @@ export default function ProjectDetailPage() {
   const [userStyle, setUserStyle] = useState('');
   const [showBookText, setShowBookText] = useState(false);
   const [recovering, setRecovering] = useState(false);
+  const [selectedStep, setSelectedStep] = useState<number | null>(null);
 
   const fetchProject = useCallback(async () => {
     try {
@@ -133,12 +134,12 @@ export default function ProjectDetailPage() {
   }
 
   // Determine current active or upcoming step number
-  const stepStates = project.stepStates || [];
+  const stepStates = project?.stepStates || [];
   const nextPendingStep = [1, 2, 3, 4, 5].find(stepNum => {
     const state = stepStates.find(s => s.stepNumber === stepNum);
     return !state || state.status === 'pending' || state.status === 'failed';
   }) || 5;
-  const currentStepNumber = runningStep || nextPendingStep;
+  const currentStepNumber = runningStep || selectedStep || nextPendingStep;
 
   const currentStepState: StepState | undefined = stepStates.find(
     s => s.stepNumber === currentStepNumber
@@ -196,7 +197,11 @@ export default function ProjectDetailPage() {
       )}
 
       {/* Stepper Header */}
-      <Stepper stepStates={stepStates} currentStepNumber={currentStepNumber} />
+      <Stepper
+        stepStates={stepStates}
+        currentStepNumber={currentStepNumber}
+        onSelectStep={stepNum => setSelectedStep(stepNum)}
+      />
 
       {/* In-Progress State Banner (§4.3 Requirement) */}
       {runningStep && (
@@ -252,11 +257,11 @@ export default function ProjectDetailPage() {
       )}
 
       {/* Main Action Trigger Card */}
-      {project.overallStatus !== 'done' && !runningStep && currentStepState?.status !== 'failed' && (
+      {!runningStep && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
-              Next Pipeline Step
+              {currentStepState?.status === 'done' ? 'Re-run Step' : 'Pipeline Step'}
             </span>
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               {STEP_NAMES[currentStepNumber - 1]}

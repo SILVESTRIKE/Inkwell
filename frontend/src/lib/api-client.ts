@@ -142,6 +142,8 @@ export const api = {
   },
 
   getMediaUrl(projectId: string, filename: string): string {
-    return `${API_BASE_URL}/api/media/files/${projectId}/${filename}`
+    const token = getStoredToken();
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    return `${API_BASE_URL}/api/media/files/${projectId}/${filename}${tokenParam}`;
   },
 };

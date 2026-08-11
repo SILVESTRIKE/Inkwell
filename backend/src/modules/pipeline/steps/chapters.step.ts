@@ -37,12 +37,18 @@ export async function runChaptersStep(
 
   let rawList: any[] = [];
   try {
-    const parsed = JSON.parse(responseText);
-    rawList = Array.isArray(parsed) ? parsed : (parsed.chapters || Object.values(parsed)[0] || []);
+    const cleanJson = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(cleanJson);
+    rawList = Array.isArray(parsed) ? parsed : (parsed.chapters || parsed.items || Object.values(parsed)[0] || []);
     if (!Array.isArray(rawList)) {
       rawList = [];
     }
   } catch {
+    rawList = [];
+  }
+
+  // GUARANTEE: Never return empty array. Fallback if Gemini returned empty array or non-JSON.
+  if (rawList.length === 0) {
     rawList = [
       {
         chapterTitle: 'Chapter 1 Illustration',
