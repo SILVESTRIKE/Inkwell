@@ -52,3 +52,12 @@ Examples:
 
 - **Database Schemas**: Always ensure all Mongoose/Prisma schemas include automatic timestamps (`createdAt`, `updatedAt`) and a soft-delete field (`isDeleted?: boolean`).
 - **Controller Layer**: Controllers MUST NOT contain business logic. Controllers must only handle parsing/validating HTTP requests, passing arguments to domain services, and returning HTTP responses.
+
+---
+
+## 5. Feature-Isolated Branching & Integration Workflow
+
+1. **Feature Isolation**: Develop every new feature or refactor on its own dedicated feature branch (e.g. `feat/<short-description>` or `fix/<short-description>`), branched off `dev` or `main`.
+2. **Atomic Commits & Remote Push**: After finishing a feature, run build/tests, commit changes using Conventional Commits, and push the branch to remote (`git push origin <branch-name>`).
+3. **Integration into `dev` Branch**: Merge completed feature branches into the `dev` integration branch (`git checkout dev && git merge <branch-name>`), then push `dev` to remote (`git push origin dev`).
+
