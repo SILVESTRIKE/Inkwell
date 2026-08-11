@@ -67,6 +67,12 @@ Claude originally caught exceptions with generic `AppError` and inline HTTP stat
 
 Cost accepted: Additional class boilerplate files, but API error outputs are strictly structured and predictable for frontend consumption.
 
+## Gemini Multi-API Key Load Balancing & Rate-Limit Failover
+
+To prevent single API key quota exhaustion and `429 Too Many Requests` bottlenecks when running image generation pipeline steps, we updated `GeminiClient` to support a pool of multiple Gemini API keys (`GEMINI_API_KEYS=key1,key2,key3`). Requests are distributed using a round-robin algorithm. If any single key encounters a 429 rate limit or quota error, `GeminiClient` automatically fails over to the next key in the pool.
+
+Cost accepted: Requires managing multiple API keys in environment config, but guarantees high availability and avoids pipeline stalls during heavy load.
+
 ## Gemini model selection
 
 We selected `gemini-2.0-flash` for text and structured JSON extraction due to its high speed and reliable JSON Schema enforcement. For image generation, we selected `imagen-3.0-generate-002` for storybook portrait and scene rendering.

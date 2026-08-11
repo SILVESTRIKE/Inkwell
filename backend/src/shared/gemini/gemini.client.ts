@@ -1,4 +1,5 @@
-import { env } from '../config/env';
+import { env, getGeminiApiKeys } from '../config/env';
+import { logger } from '../logger/logger';
 
 export interface GeminiTextOptions {
   prompt: string;
@@ -14,23 +15,39 @@ export interface GeminiImageOptions {
 }
 
 export class GeminiClient {
-  private apiKey: string;
+  private apiKeys: string[] = [];
+  private currentKeyIndex: number = 0;
   private textModel: string = 'gemini-2.0-flash';
   private imageModel: string = 'imagen-3.0-generate-002';
 
-  constructor(apiKey?: string) {
-    this.apiKey = apiKey || env.GEMINI_API_KEY;
+  constructor(apiKeys?: string | string[]) {
+    if (Array.isArray(apiKeys)) {
+      this.apiKeys = apiKeys.filter((k) => k && k.trim());
+    } else if (typeof apiKeys === 'string' && apiKeys.trim()) {
+      this.apiKeys = [apiKeys.trim()];
+    } else {
+      this.apiKeys = getGeminiApiKeys();
+    }
+  }
+
+  // Round-robin API key selector
+  private getNextApiKey(): string {
+    if (this.apiKeys.length === 0) return '';
+    const key = this.apiKeys[this.currentKeyIndex];
+    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
+    return key;
   }
 
   // Upload book text or create Cached Content reference once
   async uploadOrCacheBookText(bookText: string): Promise<string> {
-    if (!this.apiKey) {
+    const apiKey = this.getNextApiKey();
+    if (!apiKey) {
       return 'mock-cached-content-id';
     }
 
     try {
       // Use Gemini CachedContents API v1beta to store book text once
-      const url = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${this.apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${apiKey}`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,63 +76,84 @@ export class GeminiClient {
     }
   }
 
-  // Generate text or structured JSON
+  // Generate text or structured JSON with multi-key failover
   async generateText(options: GeminiTextOptions): Promise<string> {
-    if (!this.apiKey) {
+    if (this.apiKeys.length === 0) {
       return this.getMockTextResponse(options.prompt);
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.textModel}:generateContent?key=${this.apiKey}`;
-    
-    const requestBody: any = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: options.prompt }],
-        },
-      ],
-    };
+    const maxAttempts = Math.max(1, this.apiKeys.length);
+    let lastError: Error | null = null;
 
-    if (options.systemInstruction) {
-      requestBody.systemInstruction = {
-        parts: [{ text: options.systemInstruction }],
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const apiKey = this.getNextApiKey();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.textModel}:generateContent?key=${apiKey}`;
+
+      const requestBody: any = {
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: options.prompt }],
+          },
+        ],
       };
+
+      if (options.systemInstruction) {
+        requestBody.systemInstruction = {
+          parts: [{ text: options.systemInstruction }],
+        };
+      }
+
+      if (options.cachedContentName) {
+        requestBody.cachedContent = options.cachedContentName;
+      }
+
+      if (options.responseSchema) {
+        requestBody.generationConfig = {
+          responseMimeType: 'application/json',
+          responseSchema: options.responseSchema,
+        };
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          if (response.status === 429 && maxAttempts > 1) {
+            logger.warn(`[GeminiClient] Key rate-limited (429). Failing over to next key in pool...`);
+            lastError = new Error(`Gemini API rate-limited (429): ${errText}`);
+            continue; // Retry with next API key in pool
+          }
+          throw new Error(`Gemini API text generation error (${response.status}): ${errText}`);
+        }
+
+        const data = await response.json();
+        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!candidateText) {
+          throw new Error('Gemini API returned empty response');
+        }
+
+        return candidateText;
+      } catch (err: any) {
+        lastError = err;
+        if (attempt < maxAttempts - 1 && err.message?.includes('429')) {
+          continue;
+        }
+        throw err;
+      }
     }
 
-    if (options.cachedContentName) {
-      requestBody.cachedContent = options.cachedContentName;
-    }
-
-    if (options.responseSchema) {
-      requestBody.generationConfig = {
-        responseMimeType: 'application/json',
-        responseSchema: options.responseSchema,
-      };
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Gemini API text generation error (${response.status}): ${errText}`);
-    }
-
-    const data = await response.json();
-    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!candidateText) {
-      throw new Error('Gemini API returned empty response');
-    }
-
-    return candidateText;
+    throw lastError || new Error('All Gemini API keys exhausted or rate-limited.');
   }
 
-  // Generate Image (Imagen 3 API)
+  // Generate Image (Imagen 3 API) with multi-key failover
   async generateImage(options: GeminiImageOptions): Promise<Buffer> {
-    if (!this.apiKey) {
+    if (this.apiKeys.length === 0) {
       return this.getMockImageBuffer();
     }
 
@@ -123,35 +161,56 @@ export class GeminiClient {
       ? `Art style: ${options.artStyle}. ${options.prompt}`
       : options.prompt;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.imageModel}:predict?key=${this.apiKey}`;
-    
-    const requestBody = {
-      instances: [{ prompt: fullPrompt }],
-      parameters: {
-        sampleCount: 1,
-        aspectRatio: '1:1',
-        outputOptions: { mimeType: 'image/jpeg' },
-      },
-    };
+    const maxAttempts = Math.max(1, this.apiKeys.length);
+    let lastError: Error | null = null;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const apiKey = this.getNextApiKey();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.imageModel}:predict?key=${apiKey}`;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Gemini Image API error (${response.status}): ${errText}`);
+      const requestBody = {
+        instances: [{ prompt: fullPrompt }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: '1:1',
+          outputOptions: { mimeType: 'image/jpeg' },
+        },
+      };
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          if (response.status === 429 && maxAttempts > 1) {
+            logger.warn(`[GeminiClient] Image API rate-limited (429). Failing over to next key...`);
+            lastError = new Error(`Gemini Image API rate-limited (429): ${errText}`);
+            continue;
+          }
+          throw new Error(`Gemini Image API error (${response.status}): ${errText}`);
+        }
+
+        const data = await response.json();
+        const base64Image = data.predictions?.[0]?.bytesBase64Encoded;
+        if (!base64Image) {
+          throw new Error('Gemini Image API returned empty image payload');
+        }
+
+        return Buffer.from(base64Image, 'base64');
+      } catch (err: any) {
+        lastError = err;
+        if (attempt < maxAttempts - 1 && err.message?.includes('429')) {
+          continue;
+        }
+        throw err;
+      }
     }
 
-    const data = await response.json();
-    const base64Image = data.predictions?.[0]?.bytesBase64Encoded;
-    if (!base64Image) {
-      throw new Error('Gemini Image API returned empty image payload');
-    }
-
-    return Buffer.from(base64Image, 'base64');
+    throw lastError || new Error('All Gemini API keys exhausted for image generation.');
   }
 
   private getMockTextResponse(prompt: string): string {
