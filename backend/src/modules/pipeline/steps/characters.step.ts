@@ -1,0 +1,62 @@
+import { IProject, ICharacterOutput } from '../../projects/project.model';
+import { GeminiClient } from '../../../shared/gemini/gemini.client';
+
+export async function runCharactersStep(
+  project: IProject,
+  geminiClient: GeminiClient
+): Promise<ICharacterOutput[]> {
+  const artStyle = project.outputs.style?.styleName || 'Classic Storybook';
+
+  const prompt = `Identify up to 2 main ADULT characters from the book text. For each adult character, provide their name, a visual description (appearance, clothing, features), and a detailed portrait image prompt.\n\nArt Style constraint: ${artStyle}.\n\nReturn a JSON array of objects with keys: "name", "description", "imagePrompt".`;
+
+  const schema = {
+    type: 'ARRAY',
+    items: {
+      type: 'OBJECT',
+      properties: {
+        name: { type: 'STRING' },
+        description: { type: 'STRING' },
+        imagePrompt: { type: 'STRING' },
+      },
+      required: ['name', 'description', 'imagePrompt'],
+    },
+  };
+
+  const responseText = await geminiClient.generateText({
+    prompt,
+    responseSchema: schema,
+    cachedContentName: project.cachedContentName,
+  });
+
+  let rawList: any[] = [];
+  try {
+    const parsed = JSON.parse(responseText);
+    rawList = Array.isArray(parsed) ? parsed : (parsed.characters || Object.values(parsed)[0] || []);
+    if (!Array.isArray(rawList)) {
+      rawList = [];
+    }
+  } catch {
+    rawList = [
+      {
+        name: 'Main Character 1',
+        description: 'Adult protagonist of the book.',
+        imagePrompt: `Portrait of main character 1 in ${artStyle} art style.`,
+      },
+      {
+        name: 'Main Character 2',
+        description: 'Adult companion character of the book.',
+        imagePrompt: `Portrait of main character 2 in ${artStyle} art style.`,
+      },
+    ];
+  }
+
+  // HARD CONSTRAINT: Max 2 adult characters enforced server-side
+  const maxTwoCharacters = rawList.slice(0, 2);
+
+  return maxTwoCharacters.map((c: any, idx: number) => ({
+    id: `char_${idx + 1}_${Date.now()}`,
+    name: c.name || `Character ${idx + 1}`,
+    description: c.description || 'Adult character description',
+    imagePrompt: c.imagePrompt || `Portrait in ${artStyle} style`,
+  }));
+}
