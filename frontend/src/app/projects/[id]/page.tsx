@@ -292,9 +292,8 @@ export default function ProjectDetailPage() {
       )}
 
       {/* Generated Outputs Display Sections */}
-
       {/* 1. Art Style Output */}
-      {project.outputs.style && (
+      {project.outputs?.style && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-3">
           <div className="flex items-center space-x-2 text-indigo-400">
             <Palette className="w-5 h-5" />
@@ -310,7 +309,7 @@ export default function ProjectDetailPage() {
       )}
 
       {/* 2 & 3. Characters & Portraits Output */}
-      {project.outputs.characters && project.outputs.characters.length > 0 && (
+      {project.outputs?.characters && project.outputs.characters.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center space-x-2 text-indigo-400">
             <Users className="w-5 h-5" />
@@ -327,7 +326,7 @@ export default function ProjectDetailPage() {
       )}
 
       {/* 4 & 5. Chapters & Scene Illustrations Output */}
-      {project.outputs.chapters && project.outputs.chapters.length > 0 && (
+      {project.outputs?.chapters && project.outputs.chapters.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center space-x-2 text-indigo-400">
             <BookOpen className="w-5 h-5" />
