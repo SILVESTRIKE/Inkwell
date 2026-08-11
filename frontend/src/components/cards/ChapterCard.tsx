@@ -8,9 +8,8 @@ interface ChapterCardProps {
 }
 
 export const ChapterCard: React.FC<ChapterCardProps> = ({ projectId, chapter }) => {
-  const mediaUrl = chapter.illustrationFilename
-    ? api.getMediaUrl(projectId, chapter.illustrationFilename)
-    : null;
+  const rawTarget = chapter.illustrationFilename || (chapter as any).illustrationUrl;
+  const mediaUrl = rawTarget ? api.getMediaUrl(projectId, rawTarget) : null;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col md:flex-row gap-5">

@@ -1,13 +1,15 @@
 import { IProject, ICharacterOutput } from '../../projects/project.model';
 import { GeminiClient } from '../../../shared/gemini/gemini.client';
+import { env } from '../../../shared/config/env';
 
 export async function runCharactersStep(
   project: IProject,
   geminiClient: GeminiClient
 ): Promise<ICharacterOutput[]> {
   const artStyle = project.outputs.style?.styleName || 'Classic Storybook';
+  const maxCap = env.MAX_CHARACTERS;
 
-  const prompt = `Identify up to 2 main ADULT characters from the book text. For each adult character, provide their name, a visual description (appearance, clothing, features), and a detailed portrait image prompt.\n\nArt Style constraint: ${artStyle}.\n\nReturn a JSON array of objects with keys: "name", "description", "imagePrompt".`;
+  const prompt = `Identify up to ${maxCap} main ADULT characters from the book text. For each adult character, provide their name, a visual description (appearance, clothing, features), and a detailed portrait image prompt.\n\nArt Style constraint: ${artStyle}.\n\nReturn a JSON array of objects with keys: "name", "description", "imagePrompt".`;
 
   const schema = {
     type: 'ARRAY',
@@ -56,10 +58,10 @@ export async function runCharactersStep(
     ];
   }
 
-  // HARD CONSTRAINT: Max 2 adult characters enforced server-side
-  const maxTwoCharacters = rawList.slice(0, 2);
+  // HARD CONSTRAINT: Max adult characters cap enforced server-side
+  const cappedCharacters = rawList.slice(0, env.MAX_CHARACTERS);
 
-  return maxTwoCharacters.map((c: any, idx: number) => ({
+  return cappedCharacters.map((c: any, idx: number) => ({
     id: `char_${idx + 1}_${Date.now()}`,
     name: c.name || `Character ${idx + 1}`,
     description: c.description || 'Adult character description',

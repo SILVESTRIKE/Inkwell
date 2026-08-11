@@ -144,6 +144,19 @@ export const api = {
   getMediaUrl(projectId: string, filename: string): string {
     const token = getStoredToken();
     const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+
+    if (!filename) return '';
+
+    if (filename.startsWith('http://') || filename.startsWith('https://')) {
+      if (!token || filename.includes('token=')) return filename;
+      return `${filename}${filename.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+    }
+
+    if (filename.includes('/')) {
+      const cleanPath = filename.startsWith('/') ? filename : `/${filename}`;
+      return `${API_BASE_URL}/api/media/files${cleanPath}${tokenParam}`;
+    }
+
     return `${API_BASE_URL}/api/media/files/${projectId}/${filename}${tokenParam}`;
   },
 };

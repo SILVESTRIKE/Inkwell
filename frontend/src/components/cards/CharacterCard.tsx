@@ -8,9 +8,8 @@ interface CharacterCardProps {
 }
 
 export const CharacterCard: React.FC<CharacterCardProps> = ({ projectId, character }) => {
-  const mediaUrl = character.portraitFilename
-    ? api.getMediaUrl(projectId, character.portraitFilename)
-    : null;
+  const rawTarget = character.portraitFilename || (character as any).portraitUrl;
+  const mediaUrl = rawTarget ? api.getMediaUrl(projectId, rawTarget) : null;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col md:flex-row gap-5">
