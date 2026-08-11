@@ -27,32 +27,26 @@ Focus:
 ```
 === Running Backend Tests ===
 
- ✓ src/shared/locks/step.lock.test.ts (3 tests) 15ms
-   ✓ StepLock (Redis / In-memory fallback) > should acquire lock for step and prevent duplicate acquisition
-   ✓ StepLock (Redis / In-memory fallback) > should check if step is locked correctly
-   ✓ StepLock (Redis / In-memory fallback) > should release lock allowing re-acquisition
-   
- ✓ src/modules/pipeline/pipeline.service.test.ts (4 tests) 120ms
-   ✓ PipelineService > should enforce step ordering (reject running Step 2 before Step 1 is done)
-   ✓ PipelineService > should execute Step 1 successfully and update project state
-   ✓ PipelineService > should enforce max 2 adult characters cap server-side in Step 2
-   ✓ PipelineService > should recover stuck step when user triggers recoverStuckStep
+ ✓ src/shared/utils/media.util.test.ts (3 tests) 7ms
+ ✓ src/shared/errors/custom.error.test.ts (6 tests) 7ms
+ ✓ src/shared/locks/step.lock.test.ts (3 tests) 37ms
+ ✓ src/modules/auth/auth.service.test.ts (4 tests) 112ms
+ ✓ src/modules/pipeline/pipeline.service.test.ts (4 tests) 245ms
 
- Test Files  2 passed (2)
-      Tests  7 passed (7)
-   Start at  09:54:00
-   Duration  450ms
-
+ Test Files  5 passed (5)
+      Tests  20 passed (20)
+   Start at  11:26:08
+   Duration  1.60s (transform 431ms, setup 0ms, import 2.11s, tests 407ms, environment 1ms)
 
 === Running Frontend Tests ===
 
- ✓ src/components/stepper/Stepper.test.tsx (1 test) 85ms
-   ✓ Stepper Component > renders all 5 pipeline step labels
+ ✓ src/components/stepper/Stepper.test.tsx (1 test) 54ms
+ ✓ src/components/layout/Header.test.tsx (2 tests) 58ms
 
- Test Files  1 passed (1)
-      Tests  1 passed (1)
-   Start at  09:54:01
-   Duration  350ms
+ Test Files  2 passed (2)
+      Tests  3 passed (3)
+   Start at  11:26:12
+   Duration  1.79s (transform 227ms, setup 492ms, import 817ms, tests 111ms, environment 1.57s)
 
 === All Tests Completed Successfully ===
 ```
