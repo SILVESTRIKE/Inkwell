@@ -43,6 +43,7 @@ export interface IProject extends Document {
   title: string;
   bookText: string;
   cachedContentName?: string;
+  isDeleted?: boolean;
   createdAt: Date;
   updatedAt: Date;
   overallStatus: OverallStatus;
@@ -82,6 +83,7 @@ const ProjectSchema: Schema = new Schema(
     title: { type: String, required: true },
     bookText: { type: String, required: true },
     cachedContentName: { type: String },
+    isDeleted: { type: Boolean, default: false },
     overallStatus: { type: String, enum: ['draft', 'in_progress', 'done'], default: 'draft' },
     currentStepNumber: { type: Number, default: 1 },
     stepStates: {
