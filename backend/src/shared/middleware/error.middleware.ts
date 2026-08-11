@@ -1,17 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
-
-export class AppError extends Error {
-  constructor(public statusCode: number, message: string) {
-    super(message);
-    this.name = 'AppError';
-  }
-}
+import { CustomError } from '../errors/CustomError';
+import { logger } from '../logger/logger';
 
 export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction): void {
-  console.error('Unhandled error:', err);
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({ error: err.message });
+  if (err instanceof CustomError) {
+    logger.warn(`[CustomError ${err.statusCode}] ${err.message}`);
+    res.status(err.statusCode).json({
+      errors: err.serializeErrors(),
+      error: err.message,
+    });
     return;
   }
-  res.status(500).json({ error: err.message || 'Internal Server Error' });
+
+  logger.error('[Unhandled Error]', err);
+  res.status(500).json({
+    errors: [{ message: err.message || 'Internal Server Error' }],
+    error: err.message || 'Internal Server Error',
+  });
 }

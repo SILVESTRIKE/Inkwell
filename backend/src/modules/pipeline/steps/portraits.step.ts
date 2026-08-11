@@ -1,15 +1,15 @@
 import { IProject, ICharacterOutput } from '../../projects/project.model';
 import { GeminiClient } from '../../../shared/gemini/gemini.client';
 import { saveProjectFile } from '../../../shared/storage/file.storage';
-import { AppError } from '../../../shared/middleware/error.middleware';
+import { BadRequestError } from '../../../shared/errors';
 
 export async function runPortraitsStep(
   project: IProject,
   geminiClient: GeminiClient
 ): Promise<ICharacterOutput[]> {
-  const characters = project.outputs.characters;
-  if (!characters || characters.length === 0) {
-    throw new AppError(400, 'Characters step must be completed before generating portraits');
+  const characters = project.outputs.characters || [];
+  if (characters.length === 0) {
+    throw new BadRequestError('Characters step must be completed before generating portraits');
   }
 
   const artStyle = project.outputs.style?.styleName || 'Classic Storybook';

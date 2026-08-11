@@ -61,11 +61,30 @@ We updated session management to issue JWT tokens via `HttpOnly; SameSite=Lax` c
 
 Cost accepted: Requires `cookie-parser` middleware on the backend and credential header options in frontend requests.
 
+## Custom Domain Error Hierarchy (`CustomError`)
+
+Claude originally caught exceptions with generic `AppError` and inline HTTP status codes. We refactored to an explicit custom error hierarchy (`CustomError` base class with `NotFoundError`, `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `ConflictError`, `TooManyRequestsError`). This provides uniform `{ errors: [{ message, field }] }` error serialization across all endpoints.
+
+Cost accepted: Additional class boilerplate files, but API error outputs are strictly structured and predictable for frontend consumption.
+
 ## Gemini model selection
 
 We selected `gemini-2.0-flash` for text and structured JSON extraction due to its high speed and reliable JSON Schema enforcement. For image generation, we selected `imagen-3.0-generate-002` for storybook portrait and scene rendering.
 
 ---
+
+## Architectural Trade-Off Matrix
+
+| Decision Area | Choice Implemented | Alternative Considered | Trade-Off / Reason |
+|---|---|---|---|
+| **Architecture Layout** | **Feature-Module** (`auth/`, `projects/`, `pipeline/`, `media/`) | Layered MVC (`controllers/`, `models/`, `routes/`) | Keeps domain logic co-located per feature. Scalable for adding future pipeline steps without touching global folders. |
+| **Async Execution** | **BullMQ Queue + Worker** | Synchronous HTTP request | Eliminates gateway timeouts during 10-30s image generation calls and allows visual job monitoring via `@bull-board`. |
+| **Concurrency Lock** | **Redis (`SET NX` with 60s TTL)** | Client-side button disabling | Enforces lock at API level across page refreshes, multiple tabs, and concurrent double-clicks. |
+| **Context Management** | **Gemini Context Caching** | Re-sending full text per call | Drastically reduces API token consumption per pipeline step; requires fallback if caching is unavailable on free-tier keys. |
+| **Error Handling** | **Domain Error Hierarchy (`CustomError`)** | Generic `AppError(status, msg)` | Ensures standardized error JSON payloads (`{ errors: [...] }`) with field-level reporting across all routes. |
+| **Database Storage** | **MongoDB + Mongoose** | Raw JSON files on disk | Provides ACID compliance, schema validation, index performance, and avoids file-system race conditions under concurrent writes. |
+| **Observability** | **Winston + Loki + Prometheus + Grafana** | Console logging (`console.log`) | Provides full production metrics, HTTP duration histograms (`/metrics`), and log aggregation in Docker Compose. |
+
 
 ## If I had one more day
 

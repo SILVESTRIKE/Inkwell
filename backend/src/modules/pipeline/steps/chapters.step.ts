@@ -1,6 +1,6 @@
 import { IProject, IChapterOutput } from '../../projects/project.model';
 import { GeminiClient } from '../../../shared/gemini/gemini.client';
-import { AppError } from '../../../shared/middleware/error.middleware';
+import { BadRequestError } from '../../../shared/errors';
 
 export async function runChaptersStep(
   project: IProject,
@@ -8,7 +8,7 @@ export async function runChaptersStep(
 ): Promise<IChapterOutput[]> {
   const characters = project.outputs.characters || [];
   if (characters.length === 0) {
-    throw new AppError(400, 'Characters step must be completed before chapters step');
+    throw new BadRequestError('Characters step must be completed before chapters step');
   }
 
   const artStyle = project.outputs.style?.styleName || 'Classic Storybook';

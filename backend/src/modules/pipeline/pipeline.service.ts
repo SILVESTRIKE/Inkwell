@@ -1,5 +1,5 @@
 import { Project, IProject } from '../projects/project.model';
-import { AppError } from '../../shared/middleware/error.middleware';
+import { BadRequestError, NotFoundError, ConflictError } from '../../shared/errors';
 import { acquireStepLock, releaseStepLock } from '../../shared/locks/step.lock';
 import { GeminiClient } from '../../shared/gemini/gemini.client';
 import { pipelineQueue } from '../../shared/queue/pipeline.queue';
@@ -27,7 +27,7 @@ export class PipelineService {
     // Acquire lock & mark step running in Mongo
     const lockAcquired = await acquireStepLock(projectId, stepNumber);
     if (!lockAcquired) {
-      throw new AppError(409, `Step ${stepNumber} is currently running in another request.`);
+      throw new ConflictError(`Step ${stepNumber} is currently running in another request.`);
     }
 
     const currentStepState = project.stepStates.find(s => s.stepNumber === stepNumber)!;
@@ -62,9 +62,9 @@ export class PipelineService {
     stepNumber: number,
     options?: { userStyle?: string }
   ): Promise<IProject> {
-    const project = await Project.findOne({ _id: projectId, userId });
+    const project = await Project.findOne({ _id: projectId, userId, isDeleted: { $ne: true } });
     if (!project) {
-      throw new AppError(404, 'Project not found');
+      throw new NotFoundError('Project not found');
     }
 
     const currentStepState = project.stepStates.find(s => s.stepNumber === stepNumber)!;
@@ -178,44 +178,48 @@ export class PipelineService {
     }
   }
 
-  private async validateStepPrerequisites(userId: string, projectId: string, stepNumber: number): Promise<IProject> {
+  private async validateStepPrerequisites(
+    userId: string,
+    projectId: string,
+    stepNumber: number
+  ): Promise<IProject> {
     if (stepNumber < 1 || stepNumber > 5) {
-      throw new AppError(400, 'Invalid step number. Must be between 1 and 5.');
+      throw new BadRequestError('Invalid step number. Must be between 1 and 5.', 'stepNumber');
     }
 
-    const project = await Project.findOne({ _id: projectId, userId });
+    const project = await Project.findOne({ _id: projectId, userId, isDeleted: { $ne: true } });
     if (!project) {
-      throw new AppError(404, 'Project not found');
+      throw new NotFoundError('Project not found');
     }
 
     if (stepNumber > 1) {
-      const prevStepState = project.stepStates.find(s => s.stepNumber === stepNumber - 1);
-      if (!prevStepState || prevStepState.status !== 'done') {
-        throw new AppError(400, `Step ${stepNumber} cannot run before Step ${stepNumber - 1} is completed.`);
+      const prevStep = project.stepStates.find(s => s.stepNumber === stepNumber - 1);
+      if (!prevStep || prevStep.status !== 'done') {
+        throw new BadRequestError(`Step ${stepNumber} cannot run before Step ${stepNumber - 1} is completed.`);
       }
     }
 
     const currentStepState = project.stepStates.find(s => s.stepNumber === stepNumber);
     if (!currentStepState) {
-      throw new AppError(400, `Step state for step ${stepNumber} not found.`);
+      throw new BadRequestError(`Step state for step ${stepNumber} not found.`);
     }
 
     if (currentStepState.status === 'running') {
-      throw new AppError(409, `Step ${stepNumber} is already in progress.`);
+      throw new ConflictError(`Step ${stepNumber} is already in progress.`);
     }
 
     return project;
   }
 
   async recoverStuckStep(userId: string, projectId: string, stepNumber: number): Promise<IProject> {
-    const project = await Project.findOne({ _id: projectId, userId });
+    const project = await Project.findOne({ _id: projectId, userId, isDeleted: { $ne: true } });
     if (!project) {
-      throw new AppError(404, 'Project not found');
+      throw new NotFoundError('Project not found');
     }
 
     const stepState = project.stepStates.find(s => s.stepNumber === stepNumber);
     if (!stepState) {
-      throw new AppError(400, 'Invalid step number');
+      throw new BadRequestError('Invalid step number', 'stepNumber');
     }
 
     await releaseStepLock(projectId, stepNumber);

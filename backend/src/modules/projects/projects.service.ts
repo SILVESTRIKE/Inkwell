@@ -1,5 +1,5 @@
 import { Project, IProject } from './project.model';
-import { AppError } from '../../shared/middleware/error.middleware';
+import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { saveProjectFile } from '../../shared/storage/file.storage';
 import { GeminiClient } from '../../shared/gemini/gemini.client';
 
@@ -7,11 +7,11 @@ export class ProjectsService {
   private geminiClient = new GeminiClient();
 
   async createProject(userId: string, title: string, bookText: string): Promise<IProject> {
-    if (!title || title.trim().length === 0) {
-      throw new AppError(400, 'Project title is required');
+    if (!title || !title.trim()) {
+      throw new BadRequestError('Project title is required', 'title');
     }
-    if (!bookText || bookText.trim().length === 0) {
-      throw new AppError(400, 'Book text is required');
+    if (!bookText || !bookText.trim()) {
+      throw new BadRequestError('Book text is required', 'bookText');
     }
 
     const project = new Project({
@@ -54,9 +54,9 @@ export class ProjectsService {
   }
 
   async getProjectById(userId: string, projectId: string): Promise<IProject> {
-    const project = await Project.findOne({ _id: projectId, userId });
+    const project = await Project.findOne({ _id: projectId, userId, isDeleted: { $ne: true } });
     if (!project) {
-      throw new AppError(404, 'Project not found');
+      throw new NotFoundError('Project not found');
     }
     return project;
   }

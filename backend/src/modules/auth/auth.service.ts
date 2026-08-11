@@ -1,15 +1,15 @@
 import jwt from 'jsonwebtoken';
 import { User, IUser } from './user.model';
 import { env } from '../../shared/config/env';
-import { AppError } from '../../shared/middleware/error.middleware';
+import { BadRequestError } from '../../shared/errors';
 
 export class AuthService {
   async findOrCreateUser(email: string, name: string): Promise<{ token: string; user: { id: string; email: string; name: string } }> {
     if (!email || !email.includes('@')) {
-      throw new AppError(400, 'Valid email address is required');
+      throw new BadRequestError('Valid email address is required', 'email');
     }
     if (!name || name.trim().length === 0) {
-      throw new AppError(400, 'Name is required');
+      throw new BadRequestError('Name is required', 'name');
     }
 
     const normalizedEmail = email.toLowerCase().trim();
