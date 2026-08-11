@@ -75,7 +75,7 @@ Cost accepted: Requires managing multiple API keys in environment config, but gu
 
 ## Date-Structured Media Storage Hierarchy (`uploads/images/YYYY/MM`) & Query-Token Auth
 
-Claude initially saved files to flat project directories (`storage/:projectId/:filename`). I overrode this to implement a date-structured storage hierarchy (`uploads/images/YYYY/MM/<projectId>_<filename>`) co-located with DB relative paths. To allow HTML `<img>` tags to render authenticated media files cleanly without dropping 401s, we updated `requireAuth` to accept `?token=<jwt_token>` as a query parameter fallback.
+Claude initially saved files to flat project directories (`storage/:projectId/:filename`). I overrode this to implement a date-structured storage hierarchy (`uploads/images/YYYY/MM/<projectId>_<filename>`) matching `.gitignore` rules co-located with DB relative paths. To allow HTML `<img>` tags to render authenticated media files cleanly without dropping 401s, we updated `requireAuth` to accept `?token=<jwt_token>` as a query parameter fallback.
 
 Cost accepted: Requires wildcard path resolution (`/api/media/files/*`) and URL prefix transformation in `media.util.ts`, but prevents single-folder disk bloat and cleanly handles browser image authentication.
 
