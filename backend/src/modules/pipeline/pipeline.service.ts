@@ -9,6 +9,8 @@ import { runCharactersStep } from './steps/characters.step';
 import { runPortraitsStep } from './steps/portraits.step';
 import { runChaptersStep } from './steps/chapters.step';
 import { runIllustrationsStep } from './steps/illustrations.step';
+import { Media } from '../media/media.model';
+import { PipelineLog } from './pipeline-log.model';
 
 export class PipelineService {
   private geminiClient = new GeminiClient();
@@ -67,31 +69,69 @@ export class PipelineService {
 
     const currentStepState = project.stepStates.find(s => s.stepNumber === stepNumber)!;
 
+    const stepNames = ['style', 'characters', 'portraits', 'chapters', 'illustrations'];
+    const stepName = stepNames[stepNumber - 1] || `step-${stepNumber}`;
+    const startTime = Date.now();
+
     try {
+      let stepResult: any = null;
       switch (stepNumber) {
         case 1: {
           const styleOutput = await runStyleStep(project, this.geminiClient, options);
           project.outputs.style = styleOutput;
+          stepResult = styleOutput;
           break;
         }
         case 2: {
           const charsOutput = await runCharactersStep(project, this.geminiClient);
           project.outputs.characters = charsOutput;
+          stepResult = charsOutput;
           break;
         }
         case 3: {
           const portraitsOutput = await runPortraitsStep(project, this.geminiClient);
           project.outputs.characters = portraitsOutput;
+          stepResult = portraitsOutput;
+
+          // Record generated character portraits into Media collection
+          for (const char of portraitsOutput) {
+            if (char.portraitFilename) {
+              await Media.create({
+                name: `${char.name} Portrait`,
+                mediaPath: `/api/media/files/${projectId}/${char.portraitFilename}`,
+                type: 'image/png',
+                creatorId: userId,
+                projectId,
+                description: char.imagePrompt,
+              });
+            }
+          }
           break;
         }
         case 4: {
           const chaptersOutput = await runChaptersStep(project, this.geminiClient);
           project.outputs.chapters = chaptersOutput;
+          stepResult = chaptersOutput;
           break;
         }
         case 5: {
           const illustrationsOutput = await runIllustrationsStep(project, this.geminiClient);
           project.outputs.chapters = illustrationsOutput;
+          stepResult = illustrationsOutput;
+
+          // Record generated chapter illustrations into Media collection
+          for (const chap of illustrationsOutput) {
+            if (chap.illustrationFilename) {
+              await Media.create({
+                name: `${chap.chapterTitle} Illustration`,
+                mediaPath: `/api/media/files/${projectId}/${chap.illustrationFilename}`,
+                type: 'image/png',
+                creatorId: userId,
+                projectId,
+                description: chap.illustrationPrompt,
+              });
+            }
+          }
           break;
         }
       }
@@ -104,10 +144,33 @@ export class PipelineService {
       }
 
       await project.save();
+
+      // Log execution audit trace to PipelineLog collection
+      await PipelineLog.create({
+        projectId,
+        userId,
+        stepNumber,
+        stepName,
+        status: 'done',
+        rawOutput: stepResult,
+        durationMs: Date.now() - startTime,
+      });
+
       return project;
     } catch (err: any) {
       currentStepState.status = 'failed';
       currentStepState.error = err.message || 'Step execution failed';
+      await project.save();
+
+      await PipelineLog.create({
+        projectId,
+        userId,
+        stepNumber,
+        stepName,
+        status: 'failed',
+        error: err.message || 'Step execution failed',
+        durationMs: Date.now() - startTime,
+      });
       await project.save();
       throw err;
     } finally {
