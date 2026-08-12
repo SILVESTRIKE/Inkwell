@@ -15,6 +15,27 @@ export interface GeminiImageOptions {
   characterPortraits?: Buffer[];
 }
 
+// Helper to format clean human-readable error messages from Gemini API responses
+function formatGeminiError(status: number, errText: string): string {
+  try {
+    const json = JSON.parse(errText);
+    const msg = json.error?.message;
+    if (msg) {
+      if (status === 429 || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED')) {
+        return `Gemini API quota exceeded (429). Please wait ~30 seconds before retrying.`;
+      }
+      const firstLine = msg.split('\n')[0].replace(/^\*\s*/, '');
+      return `Gemini API error (${status}): ${firstLine}`;
+    }
+  } catch {
+    // If not valid JSON
+  }
+  if (status === 429) {
+    return `Gemini API quota exceeded (429). Please wait ~30 seconds before retrying.`;
+  }
+  return `Gemini API returned HTTP ${status}.`;
+}
+
 export class GeminiClient {
   private apiKeys: string[] = [];
   private currentKeyIndex: number = 0;
@@ -128,12 +149,13 @@ export class GeminiClient {
 
         if (!response.ok) {
           const errText = await response.text();
+          const cleanMsg = formatGeminiError(response.status, errText);
           if (response.status === 429 && maxAttempts > 1) {
             logger.warn(`[GeminiClient] Key rate-limited (429). Failing over to next key in pool...`);
-            lastError = new Error(`Gemini API rate-limited (429): ${errText}`);
+            lastError = new Error(cleanMsg);
             continue; // Retry with next API key in pool
           }
-          throw new Error(`Gemini Text API returned HTTP ${response.status}: ${errText}`);
+          throw new Error(cleanMsg);
         }
 
         const data = await response.json();
@@ -213,12 +235,13 @@ export class GeminiClient {
 
         if (!response.ok) {
           const errText = await response.text();
+          const cleanMsg = formatGeminiError(response.status, errText);
           if (response.status === 429 && maxAttempts > 1) {
             logger.warn(`[GeminiClient] Image API rate-limited (429). Failing over to next key...`);
-            lastError = new Error(`Gemini Image API rate-limited (429): ${errText}`);
+            lastError = new Error(cleanMsg);
             continue;
           }
-          throw new Error(`Gemini Image API returned HTTP ${response.status}: ${errText}`);
+          throw new Error(cleanMsg);
         }
 
         const data = await response.json();
