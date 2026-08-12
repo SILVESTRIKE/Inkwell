@@ -45,6 +45,8 @@ function getActSummary(stepNumber: number, project: ProjectData, status: string)
   }
 }
 
+import { isStepUnlocked } from '@/lib/step-utils';
+
 export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
   project,
   selectedStep,
@@ -54,19 +56,7 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
   onToggleCollapse,
 }) => {
   const stepStates = project.stepStates || [];
-  const step1Done = stepStates.find(s => s.stepNumber === 1)?.status === 'done';
-  const step2Done = stepStates.find(s => s.stepNumber === 2)?.status === 'done';
-  const step3Done = stepStates.find(s => s.stepNumber === 3)?.status === 'done';
-  const step4Done = stepStates.find(s => s.stepNumber === 4)?.status === 'done';
-
-  const isStepUnlocked = (stepNum: number): boolean => {
-    if (stepNum === 1) return true;
-    if (stepNum === 2) return step1Done;
-    if (stepNum === 3) return step2Done;
-    if (stepNum === 4) return step1Done && step2Done;
-    if (stepNum === 5) return step3Done && step4Done;
-    return false;
-  };
+  const unlocked = (stepNum: number) => isStepUnlocked(stepNum, stepStates);
 
   return (
     <aside
@@ -97,16 +87,16 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
           const state: StepState | undefined = stepStates.find(s => s.stepNumber === act.stepNumber);
           const status = state?.status || 'pending';
           const isSelected = selectedStep === act.stepNumber;
-          const unlocked = isStepUnlocked(act.stepNumber);
+          const isUnlocked = unlocked(act.stepNumber);
           const summary = getActSummary(act.stepNumber, project, status);
 
           return (
             <button
               key={act.stepNumber}
               type="button"
-              disabled={!unlocked}
+              disabled={!isUnlocked}
               onClick={() => onSelectStep(act.stepNumber)}
-              title={!unlocked ? `Requires previous step prerequisites` : summary}
+              title={!isUnlocked ? `Requires previous step prerequisites` : summary}
               className={`w-full text-left p-3 rounded-md transition-all duration-fast flex items-start border ${
                 status === 'failed'
                   ? 'bg-error/20 border-error text-error'
@@ -114,7 +104,7 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
                   ? 'bg-obsidian border-oxide text-paper shadow-card'
                   : status === 'done'
                   ? 'bg-transparent border-transparent hover:bg-obsidian/60 text-paper'
-                  : unlocked
+                  : isUnlocked
                   ? 'bg-transparent border-transparent hover:bg-obsidian/40 text-muted'
                   : 'bg-transparent border-transparent text-faint cursor-not-allowed opacity-50'
               }`}
