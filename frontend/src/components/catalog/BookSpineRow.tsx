@@ -55,7 +55,7 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
       >
         {/* Background Ink Fill Bar across the ENTIRE Book Spine */}
         <div
-          className="absolute bottom-0 left-0 top-0 bg-oxide/15 group-hover:bg-oxide/20 border-r border-oxide/40 transition-all duration-700 pointer-events-none"
+          className="absolute bottom-0 left-0 top-0 bg-gradient-to-r from-oxide/30 via-oxide/25 to-oxide/35 group-hover:from-oxide/35 group-hover:to-oxide/40 border-r-2 border-oxide shadow-[inset_0_0_24px_rgba(217,107,74,0.2)] transition-all duration-700 pointer-events-none"
           style={{ width: `${fillPercentage}%` }}
         />
 
