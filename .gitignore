@@ -137,3 +137,6 @@ dist
 # Storage & uploaded media files
 uploads/
 backend/uploads/
+
+# Repomix outputs
+repomix-output*
