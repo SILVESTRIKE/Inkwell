@@ -168,6 +168,34 @@ export default function ProjectDetailPage() {
     s => s.stepNumber === currentStepNumber
   );
 
+  const step1Done = stepStates.find(s => s.stepNumber === 1)?.status === 'done';
+  const step2Done = stepStates.find(s => s.stepNumber === 2)?.status === 'done';
+  const step3Done = stepStates.find(s => s.stepNumber === 3)?.status === 'done';
+  const step4Done = stepStates.find(s => s.stepNumber === 4)?.status === 'done';
+
+  let canRunCurrentStep = true;
+  let stepRequirementMsg = '';
+
+  if (currentStepNumber === 2 && !step1Done) {
+    canRunCurrentStep = false;
+    stepRequirementMsg = 'Step 2 (Characters) requires Step 1 (Art Style) to be completed first.';
+  } else if (currentStepNumber === 3 && !step2Done) {
+    canRunCurrentStep = false;
+    stepRequirementMsg = 'Step 3 (Portraits) requires Step 2 (Characters) to be completed first.';
+  } else if (currentStepNumber === 4 && (!step1Done || !step2Done)) {
+    canRunCurrentStep = false;
+    stepRequirementMsg = 'Step 4 (Chapters) requires Step 1 (Art Style) and Step 2 (Characters) to be completed first.';
+  } else if (currentStepNumber === 5 && (!step3Done || !step4Done)) {
+    canRunCurrentStep = false;
+    if (!step3Done && !step4Done) {
+      stepRequirementMsg = 'Step 5 (Illustrations) requires completed outputs from both Step 3 (Portraits) and Step 4 (Chapters) to proceed.';
+    } else if (!step3Done) {
+      stepRequirementMsg = 'Step 5 (Illustrations) requires Step 3 (Character Portraits) to be completed first. Please retry Step 3 once quota resets.';
+    } else {
+      stepRequirementMsg = 'Step 5 (Illustrations) requires Step 4 (Chapter Scenes) to be completed first.';
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -225,6 +253,29 @@ export default function ProjectDetailPage() {
         currentStepNumber={currentStepNumber}
         onSelectStep={stepNum => setSelectedStep(stepNum)}
       />
+
+      {/* Persistent Failed Steps Alert Banner */}
+      {stepStates.some(s => s.status === 'failed') && (
+        <div className="bg-error/20 border-2 border-error rounded-md p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-error font-ui shadow-card">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-error shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider">
+                Attention: Step {stepStates.filter(s => s.status === 'failed').map(s => s.stepNumber).join(', ')} Incomplete / Failed
+              </h4>
+              <p className="text-xs text-error/90 mt-0.5 leading-relaxed font-medium">
+                One or more pipeline steps failed during execution. You can continue viewing other steps, but failed steps must be retried before dependent steps (like Step 5) can complete.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSelectedStep(stepStates.find(s => s.status === 'failed')!.stepNumber)}
+            className="px-3.5 py-1.5 bg-error text-paper rounded-sm text-xs font-bold uppercase tracking-wider hover:opacity-90 transition duration-fast shrink-0 cursor-pointer shadow-sm"
+          >
+            Fix Step {stepStates.find(s => s.status === 'failed')!.stepNumber}
+          </button>
+        </div>
+      )}
 
       {/* In-Progress State Banner */}
       {runningStep && (
@@ -296,7 +347,7 @@ export default function ProjectDetailPage() {
       {/* Main Action Trigger Card */}
       {!runningStep && (
         <div className="bg-charcoal border border-rule rounded-md p-6 shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6 font-ui">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <span className="text-[11px] font-semibold text-oxide uppercase tracking-wider">
               {currentStepState?.status === 'done' ? 'Re-run Step' : 'Pipeline Step'}
             </span>
@@ -310,6 +361,14 @@ export default function ProjectDetailPage() {
               {currentStepNumber === 4 && 'Identify max 1 main chapter illustration prompt.'}
               {currentStepNumber === 5 && 'Generate scene illustration reusing character portraits.'}
             </p>
+
+            {/* Step prerequisite warning banner */}
+            {!canRunCurrentStep && (
+              <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-sm text-xs text-amber-200 flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <span>{stepRequirementMsg}</span>
+              </div>
+            )}
 
             {/* Step 1 optional user style input */}
             {currentStepNumber === 1 && (
@@ -330,10 +389,15 @@ export default function ProjectDetailPage() {
 
           <button
             onClick={() => handleRunStep(currentStepNumber)}
-            className="flex items-center space-x-2 px-6 py-3 bg-oxide hover:bg-oxide-hover text-paper font-semibold text-xs uppercase tracking-wider rounded-sm shadow-card transition duration-fast shrink-0 cursor-pointer"
+            disabled={!canRunCurrentStep}
+            className={`flex items-center space-x-2 px-6 py-3 font-semibold text-xs uppercase tracking-wider rounded-sm shadow-card transition duration-fast shrink-0 ${
+              canRunCurrentStep
+                ? 'bg-oxide hover:bg-oxide-hover text-paper cursor-pointer'
+                : 'bg-charcoal-light text-muted border border-rule cursor-not-allowed opacity-60'
+            }`}
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Run {STEP_NAMES[currentStepNumber - 1]}</span>
+            <span>{currentStepState?.status === 'done' ? `Re-run ${STEP_NAMES[currentStepNumber - 1]}` : `Run ${STEP_NAMES[currentStepNumber - 1]}`}</span>
           </button>
         </div>
       )}

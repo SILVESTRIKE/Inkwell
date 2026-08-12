@@ -37,4 +37,19 @@ export class ProjectsController {
       next(err);
     }
   }
+
+  async checkBook(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const { bookText } = req.body;
+      const existingProject = await projectsService.checkExistingBook(userId, bookText);
+      if (existingProject) {
+        res.json({ exists: true, project: transformMediaURLs(req, existingProject) });
+      } else {
+        res.json({ exists: false });
+      }
+    } catch (err) {
+      next(err);
+    }
+  }
 }

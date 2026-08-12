@@ -175,13 +175,6 @@ export class GeminiClient {
       }
     }
 
-    // Quota Fallback Path: If API quota is reached on all keys, log notice and return fallback mock text to let user proceed
-    if (lastError && (lastError.message.includes('429') || lastError.message.includes('quota') || lastError.message.includes('RESOURCE_EXHAUSTED'))) {
-      this.lastQuotaNotice = 'Notice: Gemini API quota exceeded (429). Generated mock text to allow pipeline continuation.';
-      logger.warn(`[GeminiClient] Gemini API quota limit reached (429). Using fallback mock text response to allow pipeline completion.`);
-      return this.getMockTextResponse(options.prompt);
-    }
-
     throw lastError || new Error('All Gemini API keys exhausted without success.');
   }
 
@@ -269,13 +262,6 @@ export class GeminiClient {
           continue;
         }
       }
-    }
-
-    // Quota Fallback Path: If API quota is reached on all keys, log notice and return fallback mock image buffer to let user proceed
-    if (lastError && (lastError.message.includes('429') || lastError.message.includes('quota') || lastError.message.includes('RESOURCE_EXHAUSTED'))) {
-      this.lastQuotaNotice = 'Notice: Gemini API quota exceeded (429). Generated placeholder image to allow pipeline continuation.';
-      logger.warn(`[GeminiClient] Gemini API quota limit reached (429). Using fallback mock image buffer to allow pipeline completion.`);
-      return this.getMockImageBuffer();
     }
 
     throw lastError || new Error('All Gemini image API keys exhausted without success.');

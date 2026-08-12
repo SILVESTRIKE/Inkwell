@@ -7,6 +7,7 @@ const controller = new ProjectsController();
 
 router.use(requireAuth as any);
 
+router.post('/check-book', (req, res, next) => controller.checkBook(req as any, res, next));
 router.post('/', (req, res, next) => controller.createProject(req as any, res, next));
 router.get('/', (req, res, next) => controller.listProjects(req as any, res, next));
 router.get('/:id', (req, res, next) => controller.getProject(req as any, res, next));

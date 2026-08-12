@@ -224,6 +224,13 @@ export const api = {
     });
   },
 
+  async checkBook(bookText: string): Promise<{ exists: boolean; project?: ProjectData }> {
+    return await request<{ exists: boolean; project?: ProjectData }>('/api/projects/check-book', {
+      method: 'POST',
+      body: JSON.stringify({ bookText }),
+    });
+  },
+
   async getProject(id: string): Promise<ProjectData> {
     return await request<ProjectData>(`/api/projects/${id}`);
   },
