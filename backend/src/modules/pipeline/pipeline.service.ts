@@ -1,8 +1,8 @@
-import { Project, IProject } from '../projects/project.model';
-import { BadRequestError, NotFoundError, ConflictError } from '../../shared/errors';
-import { acquireStepLock, releaseStepLock, isStepLocked } from '../../shared/locks/step.lock';
+import { IProject } from '../projects/project.model';
+import { Project } from '../projects/project.model';
 import { GeminiClient } from '../../shared/gemini/gemini.client';
-import { logger } from '../../shared/logger/logger';
+import { acquireStepLock, releaseStepLock, isStepLocked } from '../../shared/locks/step.lock';
+import { NotFoundError, BadRequestError, ConflictError } from '../../shared/errors';
 import { runStyleStep } from './steps/style.step';
 import { runCharactersStep } from './steps/characters.step';
 import { runPortraitsStep } from './steps/portraits.step';
@@ -12,29 +12,45 @@ import { Media } from '../media/media.model';
 import { PipelineLog } from './pipeline-log.model';
 
 export class PipelineService {
-  private geminiClient = new GeminiClient();
+  private geminiClient: GeminiClient;
 
-  // Execute step synchronously with Redis SET NX lock protection
+  constructor(geminiClient?: GeminiClient) {
+    this.geminiClient = geminiClient || new GeminiClient();
+  }
+
   async runStep(
     userId: string,
     projectId: string,
     stepNumber: number,
-    options?: { userStyle?: string }
+    options: { userStyle?: string } = {}
   ): Promise<IProject> {
-    const project = await this.validateStepPrerequisites(userId, projectId, stepNumber);
-
-    // Acquire lock to guarantee no duplicate execution across tabs or concurrent requests
-    const lockAcquired = await acquireStepLock(projectId, stepNumber);
-    if (!lockAcquired) {
-      throw new ConflictError(`Step ${stepNumber} is currently running in another request.`);
+    const project = await Project.findOne({ _id: projectId, userId, isDeleted: false });
+    if (!project) {
+      throw new NotFoundError('Project not found');
     }
 
-    const currentStepState = project.stepStates.find(s => s.stepNumber === stepNumber)!;
+    // Step ordering verification: Step N requires Step N-1 to be completed
+    if (stepNumber > 1) {
+      const prevStep = project.stepStates.find(s => s.stepNumber === stepNumber - 1);
+      if (!prevStep || prevStep.status !== 'done') {
+        throw new BadRequestError(`Step ${stepNumber} cannot run before Step ${stepNumber - 1} is completed`);
+      }
+    }
+
+    const lockAcquired = await acquireStepLock(projectId, stepNumber);
+    if (!lockAcquired) {
+      throw new ConflictError(`Step ${stepNumber} is already currently running by another request`);
+    }
+
+    const currentStepState = project.stepStates.find(s => s.stepNumber === stepNumber);
+    if (!currentStepState) {
+      throw new BadRequestError(`Invalid step number ${stepNumber}`);
+    }
+
     currentStepState.status = 'running';
-    currentStepState.error = undefined;
     currentStepState.startedAt = new Date();
+    currentStepState.error = undefined;
     project.overallStatus = 'in_progress';
-    project.currentStepNumber = stepNumber;
     await project.save();
 
     const stepNames = ['style', 'characters', 'portraits', 'chapters', 'illustrations'];
@@ -111,6 +127,12 @@ export class PipelineService {
 
       currentStepState.status = 'done';
       currentStepState.completedAt = new Date();
+      
+      if (this.geminiClient.lastQuotaNotice) {
+        currentStepState.error = this.geminiClient.lastQuotaNotice;
+      } else {
+        currentStepState.error = undefined;
+      }
 
       if (stepNumber === 5) {
         project.overallStatus = 'done';
@@ -141,7 +163,7 @@ export class PipelineService {
         stepNumber,
         stepName,
         status: 'failed',
-        error: err.message || 'Step execution failed',
+        error: err.message,
         durationMs: Date.now() - startTime,
       });
 
@@ -151,67 +173,27 @@ export class PipelineService {
     }
   }
 
-  private async validateStepPrerequisites(
-    userId: string,
-    projectId: string,
-    stepNumber: number
-  ): Promise<IProject> {
-    if (stepNumber < 1 || stepNumber > 5) {
-      throw new BadRequestError('Invalid step number. Must be between 1 and 5.', 'stepNumber');
-    }
-
-    const project = await Project.findOne({ _id: projectId, userId, isDeleted: { $ne: true } });
+  async recoverStuckStep(userId: string, projectId: string, stepNumber: number): Promise<IProject> {
+    const project = await Project.findOne({ _id: projectId, userId, isDeleted: false });
     if (!project) {
       throw new NotFoundError('Project not found');
-    }
-
-    if (stepNumber > 1) {
-      const prevStep = project.stepStates.find(s => s.stepNumber === stepNumber - 1);
-      if (!prevStep || prevStep.status !== 'done') {
-        throw new BadRequestError(`Step ${stepNumber} cannot run before Step ${stepNumber - 1} is completed.`);
-      }
     }
 
     const currentStepState = project.stepStates.find(s => s.stepNumber === stepNumber);
     if (!currentStepState) {
-      throw new BadRequestError(`Step state for step ${stepNumber} not found.`);
+      throw new BadRequestError(`Invalid step number ${stepNumber}`);
     }
 
-    if (currentStepState.status === 'running') {
-      throw new ConflictError(`Step ${stepNumber} is already in progress.`);
+    const activeLock = await isStepLocked(projectId, stepNumber);
+    if (activeLock) {
+      throw new ConflictError(`Step ${stepNumber} is actively running with an active Redis lock. Reset aborted.`);
     }
 
-    return project;
-  }
-
-  async recoverStuckStep(userId: string, projectId: string, stepNumber: number): Promise<IProject> {
-    const project = await Project.findOne({ _id: projectId, userId, isDeleted: { $ne: true } });
-    if (!project) {
-      throw new NotFoundError('Project not found');
-    }
-
-    const stepState = project.stepStates.find(s => s.stepNumber === stepNumber);
-    if (!stepState) {
-      throw new BadRequestError('Invalid step number', 'stepNumber');
-    }
-
-    const isLocked = await isStepLocked(projectId, stepNumber);
-
-    // Staleness Guard: Refuse to recover if step is actively running AND currently locked
-    if (stepState.status === 'running' && isLocked) {
-      throw new ConflictError(`Step ${stepNumber} is currently running and locked by an active process. Cannot recover an in-flight step.`);
-    }
-
-    // Only allow recovery if status is failed, or running with an expired/missing lock
-    if (stepState.status !== 'running' && stepState.status !== 'failed') {
-      throw new BadRequestError(`Step ${stepNumber} is currently '${stepState.status}' and does not require stuck-state recovery.`);
-    }
-
-    await releaseStepLock(projectId, stepNumber);
-    stepState.status = 'failed';
-    stepState.error = 'Reset by user from stranded/stuck in-progress state';
+    currentStepState.status = 'failed';
+    currentStepState.error = 'Reset by user (stuck step recovery)';
     await project.save();
 
+    await releaseStepLock(projectId, stepNumber);
     return project;
   }
 }

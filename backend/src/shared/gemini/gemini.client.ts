@@ -41,6 +41,7 @@ export class GeminiClient {
   private currentKeyIndex: number = 0;
   private textModel: string = 'gemini-3.6-flash';
   private imageModel: string = 'gemini-3.1-flash-image';
+  public lastQuotaNotice: string | null = null;
 
   constructor(apiKeys?: string | string[]) {
     if (Array.isArray(apiKeys)) {
@@ -101,8 +102,9 @@ export class GeminiClient {
     }
   }
 
-  // Generate text or structured JSON with multi-key failover and explicit error propagation
+  // Generate text or structured JSON with multi-key failover and quota fallback
   async generateText(options: GeminiTextOptions): Promise<string> {
+    this.lastQuotaNotice = null;
     if (this.apiKeys.length === 0) {
       return this.getMockTextResponse(options.prompt);
     }
@@ -153,7 +155,7 @@ export class GeminiClient {
           if (response.status === 429 && maxAttempts > 1) {
             logger.warn(`[GeminiClient] Key rate-limited (429). Failing over to next key in pool...`);
             lastError = new Error(cleanMsg);
-            continue; // Retry with next API key in pool
+            continue;
           }
           throw new Error(cleanMsg);
         }
@@ -167,18 +169,25 @@ export class GeminiClient {
         return candidateText;
       } catch (err: any) {
         lastError = err;
-        if (attempt < maxAttempts - 1 && err.message?.includes('429')) {
+        if (attempt < maxAttempts - 1 && (err.message?.includes('429') || err.message?.includes('quota'))) {
           continue;
         }
-        throw err;
       }
+    }
+
+    // Quota Fallback Path: If API quota is reached on all keys, log notice and return fallback mock text to let user proceed
+    if (lastError && (lastError.message.includes('429') || lastError.message.includes('quota') || lastError.message.includes('RESOURCE_EXHAUSTED'))) {
+      this.lastQuotaNotice = 'Notice: Gemini API quota exceeded (429). Generated mock text to allow pipeline continuation.';
+      logger.warn(`[GeminiClient] Gemini API quota limit reached (429). Using fallback mock text response to allow pipeline completion.`);
+      return this.getMockTextResponse(options.prompt);
     }
 
     throw lastError || new Error('All Gemini API keys exhausted without success.');
   }
 
-  // Generate Image using gemini-3.1-flash-image generateContent with responseModalities: ['IMAGE']
+  // Generate Image with quota fallback to mock image buffer
   async generateImage(options: GeminiImageOptions): Promise<Buffer> {
+    this.lastQuotaNotice = null;
     if (this.apiKeys.length === 0) {
       return this.getMockImageBuffer();
     }
@@ -256,11 +265,17 @@ export class GeminiClient {
         throw new Error('Gemini Image API returned invalid response payload structure (no inlineData image bytes found).');
       } catch (err: any) {
         lastError = err;
-        if (attempt < maxAttempts - 1 && err.message?.includes('429')) {
+        if (attempt < maxAttempts - 1 && (err.message?.includes('429') || err.message?.includes('quota'))) {
           continue;
         }
-        throw err;
       }
+    }
+
+    // Quota Fallback Path: If API quota is reached on all keys, log notice and return fallback mock image buffer to let user proceed
+    if (lastError && (lastError.message.includes('429') || lastError.message.includes('quota') || lastError.message.includes('RESOURCE_EXHAUSTED'))) {
+      this.lastQuotaNotice = 'Notice: Gemini API quota exceeded (429). Generated placeholder image to allow pipeline continuation.';
+      logger.warn(`[GeminiClient] Gemini API quota limit reached (429). Using fallback mock image buffer to allow pipeline completion.`);
+      return this.getMockImageBuffer();
     }
 
     throw lastError || new Error('All Gemini image API keys exhausted without success.');
@@ -301,11 +316,11 @@ export class GeminiClient {
   }
 
   private getMockImageBuffer(): Buffer {
-    // 1x1 SVG converted to minimal valid JPEG or SVG buffer for local demo
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
-      <rect width="400" height="400" fill="#4f46e5" />
-      <circle cx="200" cy="160" r="70" fill="#fbbf24" />
-      <text x="200" y="290" font-family="sans-serif" font-size="20" fill="#ffffff" text-anchor="middle">Generated Illustration</text>
+      <rect width="400" height="400" fill="#1e1c18" />
+      <circle cx="200" cy="160" r="70" fill="#d96b4a" opacity="0.8" />
+      <text x="200" y="270" font-family="serif" font-size="18" fill="#f2ebe0" text-anchor="middle">Fallback Illustration</text>
+      <text x="200" y="300" font-family="sans-serif" font-size="12" fill="#c4bbb0" text-anchor="middle">(API Quota Fallback)</text>
     </svg>`;
     return Buffer.from(svg, 'utf-8');
   }

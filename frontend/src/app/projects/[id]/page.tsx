@@ -241,6 +241,21 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
+      {/* Quota Fallback Notice Banner */}
+      {currentStepState?.status === 'done' && currentStepState.error?.startsWith('Notice:') && (
+        <div className="bg-oxide-soft border border-oxide/40 rounded-md p-4 flex items-center space-x-3 text-paper font-ui shadow-card">
+          <AlertCircle className="w-5 h-5 text-oxide shrink-0" />
+          <div className="flex-1">
+            <h4 className="text-xs font-semibold text-oxide uppercase tracking-wider">
+              Gemini API Quota Limit Reached (429) — Fallback Asset Generated
+            </h4>
+            <p className="text-xs text-muted mt-0.5 leading-relaxed">
+              Your free-tier Gemini API quota limit was reached. A fallback placeholder storybook asset was generated so you can continue testing the 5-act pipeline without getting blocked.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Error & Retry State Banner */}
       {currentStepState?.status === 'failed' && (
         <div className="bg-error-bg border border-error/30 rounded-md p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-error font-ui shadow-card">
