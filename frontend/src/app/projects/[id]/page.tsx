@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { AuthModal } from '@/components/auth/AuthModal';
 import { api, ProjectData, StepState } from '@/lib/api-client';
 import { Stepper } from '@/components/stepper/Stepper';
 import { CharacterCard } from '@/components/cards/CharacterCard';
@@ -28,9 +27,9 @@ import {
 const STEP_NAMES = [
   '1. Art Style',
   '2. Extract Characters',
-  '3. Generate Portraits',
-  '4. Extract Chapters',
-  '5. Generate Illustrations',
+  '3. Character Portraits',
+  '4. Chapter Scenes',
+  '5. Scene Illustrations',
 ];
 
 export default function ProjectDetailPage() {
@@ -72,7 +71,7 @@ export default function ProjectDetailPage() {
     }
   }, [user, projectId, fetchProject]);
 
-  // Polling hook every 3s if any step is running
+  // Polling hook every 3s if step is running
   useEffect(() => {
     if (!runningStep) return;
     const interval = setInterval(() => {
@@ -108,35 +107,37 @@ export default function ProjectDetailPage() {
     }
   };
 
-  if (!user) return <AuthModal />;
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20 text-muted font-ui text-xs">
-        <Loader2 className="w-4 h-4 animate-spin mr-2 text-accent" />
-        Loading project pipeline...
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-3 font-ui text-muted">
+        <Loader2 className="w-8 h-8 animate-spin text-oxide" />
+        <p className="text-xs uppercase tracking-wider font-semibold">Loading project pipeline...</p>
       </div>
     );
   }
 
-  if (!project) {
+  if (error || !project) {
     return (
-      <div className="text-center py-16 text-muted font-ui">
-        <p className="mb-4 text-sm">Project not found.</p>
-        <Link href="/projects" className="px-4 py-2 bg-accent text-paper text-xs rounded-sm">
-          Back to Projects
+      <div className="bg-error-bg border border-error/30 rounded-md p-6 text-center space-y-3 font-ui max-w-lg mx-auto">
+        <AlertCircle className="w-8 h-8 text-error mx-auto" />
+        <h3 className="text-sm font-semibold text-error">Project Not Found or Access Denied</h3>
+        <p className="text-xs text-muted">{error || 'Could not fetch project details.'}</p>
+        <Link
+          href="/projects"
+          className="inline-flex items-center space-x-1.5 px-4 py-2 bg-charcoal text-paper border border-rule rounded-sm text-xs font-medium hover:bg-obsidian transition duration-fast"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Projects</span>
         </Link>
       </div>
     );
   }
 
-  // Determine current active or upcoming step number
-  const stepStates = project?.stepStates || [];
-  const nextPendingStep = [1, 2, 3, 4, 5].find(stepNum => {
-    const state = stepStates.find(s => s.stepNumber === stepNum);
-    return !state || state.status === 'pending' || state.status === 'failed';
-  }) || 5;
-  const currentStepNumber = runningStep || selectedStep || nextPendingStep;
+  const stepStates = project.stepStates || [];
+
+  // Determine current active or next pending step
+  const nextPendingStep = stepStates.find(s => s.status === 'pending')?.stepNumber || 5;
+  const currentStepNumber = selectedStep !== null ? selectedStep : (runningStep || nextPendingStep);
 
   const currentStepState: StepState | undefined = stepStates.find(
     s => s.stepNumber === currentStepNumber
@@ -145,18 +146,18 @@ export default function ProjectDetailPage() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rule pb-4">
         <div className="flex items-center space-x-3">
           <Link
             href="/projects"
-            className="p-1.5 bg-raised hover:bg-paper text-muted hover:text-ink rounded-md border border-border transition duration-fast"
+            className="p-1.5 bg-charcoal hover:bg-obsidian text-muted hover:text-paper rounded-md border border-rule transition duration-fast"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <h2 className="text-2xl font-serif font-bold text-ink flex items-center gap-2">
+            <h2 className="text-2xl font-display font-bold text-paper flex items-center gap-2">
               {project.title}
-              <span className="text-[11px] font-ui font-normal px-2 py-0.5 rounded-sm bg-accent-soft text-accent border border-border capitalize">
+              <span className="text-[11px] font-ui font-normal px-2 py-0.5 rounded-sm bg-oxide-soft text-oxide border border-rule capitalize">
                 {(project.overallStatus || 'draft').replace('_', ' ')}
               </span>
             </h2>
@@ -168,9 +169,9 @@ export default function ProjectDetailPage() {
 
         <button
           onClick={() => setShowBookText(!showBookText)}
-          className="flex items-center space-x-1.5 px-3 py-1.5 bg-raised hover:bg-paper text-muted hover:text-ink rounded-md border border-border text-xs font-ui transition duration-fast"
+          className="flex items-center space-x-1.5 px-3 py-1.5 bg-charcoal hover:bg-obsidian text-muted hover:text-paper rounded-md border border-rule text-xs font-ui transition duration-fast cursor-pointer"
         >
-          <FileText className="w-3.5 h-3.5 text-accent" />
+          <FileText className="w-3.5 h-3.5 text-oxide" />
           <span>{showBookText ? 'Hide Book Text' : 'View Full Book Text'}</span>
           {showBookText ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
@@ -178,16 +179,16 @@ export default function ProjectDetailPage() {
 
       {/* Book Text Drawer */}
       {showBookText && (
-        <div className="bg-raised border border-border rounded-md p-5 shadow-card font-ui">
-          <div className="flex items-center justify-between mb-3 border-b border-border pb-2">
-            <h4 className="text-xs font-semibold text-ink flex items-center gap-2">
-              <FileText className="w-4 h-4 text-accent" /> Full Book Text Content
+        <div className="bg-charcoal border border-rule rounded-md p-5 shadow-card font-ui">
+          <div className="flex items-center justify-between mb-3 border-b border-rule pb-2">
+            <h4 className="text-xs font-semibold text-paper flex items-center gap-2">
+              <FileText className="w-4 h-4 text-oxide" /> Full Book Text Content
             </h4>
             <span className="text-xs text-faint font-mono">
               {project.bookText.length} characters
             </span>
           </div>
-          <pre className="text-xs font-body text-ink whitespace-pre-wrap max-h-80 overflow-y-auto leading-relaxed bg-paper p-4 rounded-sm border border-border book-measure">
+          <pre className="text-xs font-body text-paper whitespace-pre-wrap max-h-80 overflow-y-auto leading-relaxed bg-obsidian p-4 rounded-sm border border-rule book-measure">
             {project.bookText}
           </pre>
         </div>
@@ -202,10 +203,10 @@ export default function ProjectDetailPage() {
 
       {/* In-Progress State Banner */}
       {runningStep && (
-        <div className="bg-accent-soft border border-border rounded-md p-4 flex items-center space-x-3 text-ink font-ui">
-          <Loader2 className="w-4 h-4 animate-spin text-accent shrink-0" />
+        <div className="bg-oxide-soft border border-rule rounded-md p-4 flex items-center space-x-3 text-paper font-ui">
+          <Loader2 className="w-4 h-4 animate-spin text-oxide shrink-0" />
           <div className="flex-1">
-            <h4 className="text-xs font-semibold text-accent">
+            <h4 className="text-xs font-semibold text-oxide">
               {STEP_NAMES[runningStep - 1]} is running...
             </h4>
             <p className="text-xs text-muted">
@@ -233,7 +234,7 @@ export default function ProjectDetailPage() {
           <div className="flex items-center space-x-2 shrink-0">
             <button
               onClick={() => handleRunStep(currentStepNumber)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 bg-error text-paper rounded-sm text-xs font-medium shadow-card hover:opacity-90 transition duration-fast"
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-error text-paper rounded-sm text-xs font-medium shadow-card hover:opacity-90 transition duration-fast cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Retry Step {currentStepNumber}</span>
@@ -242,7 +243,7 @@ export default function ProjectDetailPage() {
             <button
               onClick={() => handleRecoverStuckStep(currentStepNumber)}
               disabled={recovering}
-              className="flex items-center space-x-1 px-2.5 py-1.5 bg-paper text-muted hover:text-ink border border-border rounded-sm text-xs transition duration-fast"
+              className="flex items-center space-x-1 px-2.5 py-1.5 bg-obsidian text-muted hover:text-paper border border-rule rounded-sm text-xs transition duration-fast cursor-pointer"
               title="Force reset step lock"
             >
               <RefreshCw className="w-3 h-3" />
@@ -254,15 +255,15 @@ export default function ProjectDetailPage() {
 
       {/* Main Action Trigger Card */}
       {!runningStep && (
-        <div className="bg-raised border border-border rounded-md p-6 shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6 font-ui">
+        <div className="bg-charcoal border border-rule rounded-md p-6 shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6 font-ui">
           <div className="space-y-1">
-            <span className="text-[11px] font-semibold text-accent uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-oxide uppercase tracking-wider">
               {currentStepState?.status === 'done' ? 'Re-run Step' : 'Pipeline Step'}
             </span>
-            <h3 className="text-xl font-serif font-bold text-ink">
+            <h3 className="text-xl font-display font-bold text-paper">
               {STEP_NAMES[currentStepNumber - 1]}
             </h3>
-            <p className="text-xs text-muted max-w-xl">
+            <p className="text-sm font-body text-muted max-w-xl leading-relaxed">
               {currentStepNumber === 1 && 'Propose an art style or supply your own custom storybook style.'}
               {currentStepNumber === 2 && 'Identify max 2 adult main characters with visual portrait prompts.'}
               {currentStepNumber === 3 && 'Generate portrait images for each extracted adult character.'}
@@ -272,8 +273,8 @@ export default function ProjectDetailPage() {
 
             {/* Step 1 optional user style input */}
             {currentStepNumber === 1 && (
-              <div className="pt-2 max-w-md">
-                <label className="block text-xs font-medium text-muted mb-1">
+              <div className="pt-3 max-w-md">
+                <label className="block label-sm mb-1.5">
                   Optional Custom Art Style (Leave blank for AI generation)
                 </label>
                 <input
@@ -281,7 +282,7 @@ export default function ProjectDetailPage() {
                   value={userStyle}
                   onChange={e => setUserStyle(e.target.value)}
                   placeholder="e.g. Victorian Oil Painting or Whimsical Ink Sketch"
-                  className="w-full px-3 py-1.5 bg-paper border border-border-strong rounded-sm text-xs text-ink placeholder-faint focus:outline-none focus:border-accent"
+                  className="w-full px-3.5 py-2 bg-obsidian border border-rule-strong rounded-sm text-xs text-paper placeholder-faint focus:outline-none focus:border-oxide transition duration-fast"
                 />
               </div>
             )}
@@ -289,9 +290,9 @@ export default function ProjectDetailPage() {
 
           <button
             onClick={() => handleRunStep(currentStepNumber)}
-            className="flex items-center space-x-2 px-5 py-2.5 bg-accent hover:bg-accent-hover text-paper font-medium text-xs rounded-sm shadow-card transition duration-fast shrink-0"
+            className="flex items-center space-x-2 px-6 py-3 bg-oxide hover:bg-oxide-hover text-paper font-semibold text-xs uppercase tracking-wider rounded-sm shadow-card transition duration-fast shrink-0 cursor-pointer"
           >
-            <Play className="w-4 h-4 fill-current" />
+            <Play className="w-3.5 h-3.5 fill-current" />
             <span>Run {STEP_NAMES[currentStepNumber - 1]}</span>
           </button>
         </div>
@@ -300,30 +301,33 @@ export default function ProjectDetailPage() {
       {/* Generated Outputs Display Sections */}
       {/* 1. Art Style Output */}
       {project.outputs?.style && (
-        <div className="bg-raised border border-border rounded-md p-5 shadow-card space-y-3 font-ui">
-          <div className="flex items-center space-x-2 text-accent">
-            <Palette className="w-4 h-4" />
-            <h3 className="text-md font-serif font-bold text-ink">Art Style</h3>
+        <div className="bg-charcoal border border-rule rounded-md p-6 shadow-card space-y-4 font-ui">
+          <div className="flex items-center space-x-2">
+            <Palette className="w-4 h-4 text-oxide" />
+            <span className="label-sm">Act 01 Output — Art Style</span>
           </div>
-          <div className="bg-paper p-4 rounded-sm border border-border">
-            <h4 className="text-sm font-serif font-semibold text-accent mb-1">
+          <div className="bg-obsidian p-5 rounded-sm border border-rule">
+            <h4 className="text-xl font-display font-bold text-paper mb-2">
               {project.outputs.style.styleName}
             </h4>
-            <p className="text-xs font-body text-muted leading-relaxed">{project.outputs.style.description}</p>
+            <p className="text-sm font-body text-paper/90 leading-relaxed max-w-2xl">
+              {project.outputs.style.description}
+            </p>
           </div>
         </div>
       )}
 
       {/* 2 & 3. Characters & Portraits Output */}
       {project.outputs?.characters && project.outputs.characters.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center space-x-2 text-accent font-ui">
-            <Users className="w-4 h-4" />
-            <h3 className="text-md font-serif font-bold text-ink">
-              Adult Main Characters ({project.outputs.characters.length} / Max 2)
-            </h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between font-ui">
+            <div className="flex items-center space-x-2">
+              <Users className="w-4 h-4 text-oxide" />
+              <span className="label-sm">Act 02 & 03 Outputs — Adult Main Characters</span>
+            </div>
+            <span className="text-xs text-muted font-mono">{project.outputs.characters.length} / Max 2</span>
           </div>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-6">
             {project.outputs.characters.map(char => (
               <CharacterCard key={char.id} projectId={project._id} character={char} />
             ))}
@@ -333,14 +337,15 @@ export default function ProjectDetailPage() {
 
       {/* 4 & 5. Chapters & Scene Illustrations Output */}
       {project.outputs?.chapters && project.outputs.chapters.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center space-x-2 text-accent font-ui">
-            <BookOpen className="w-4 h-4" />
-            <h3 className="text-md font-serif font-bold text-ink">
-              Chapter Illustrations ({project.outputs.chapters.length} / Max 1)
-            </h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between font-ui">
+            <div className="flex items-center space-x-2">
+              <BookOpen className="w-4 h-4 text-oxide" />
+              <span className="label-sm">Act 04 & 05 Outputs — Chapter Scenes</span>
+            </div>
+            <span className="text-xs text-muted font-mono">{project.outputs.chapters.length} / Max 1</span>
           </div>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-6">
             {project.outputs.chapters.map(ch => (
               <ChapterCard key={ch.id} projectId={project._id} chapter={ch} />
             ))}
@@ -350,11 +355,11 @@ export default function ProjectDetailPage() {
 
       {/* Pipeline Completion Banner */}
       {project.overallStatus === 'done' && (
-        <div className="bg-raised border border-success/40 rounded-md p-6 text-center space-y-2 shadow-card font-ui">
+        <div className="bg-charcoal border border-success/40 rounded-md p-6 text-center space-y-2 shadow-card font-ui">
           <div className="w-10 h-10 bg-success/15 border border-success/40 rounded-md flex items-center justify-center text-success mx-auto">
             <CheckCircle2 className="w-5 h-5" />
           </div>
-          <h3 className="text-lg font-serif font-bold text-ink">Pipeline Complete!</h3>
+          <h3 className="text-xl font-display font-bold text-paper">Storybook Pipeline Complete</h3>
           <p className="text-xs text-muted max-w-md mx-auto">
             All 5 steps have successfully generated character portraits and chapter scene illustrations.
           </p>

@@ -16,7 +16,6 @@ export class PipelineController {
       const project = await pipelineService.runStep(userId, projectId, stepNumber, { userStyle });
       res.status(200).json({
         message: `Step ${stepNumber} completed successfully`,
-        jobId: `step-${stepNumber}-${Date.now()}`,
         project: transformMediaURLs(req, project),
       });
     } catch (err) {
