@@ -93,7 +93,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         </div>
 
         {/* Step Instructions Overview */}
-        <div className="bg-obsidian p-3.5 rounded-sm border border-rule space-y-2">
+        <div className="bg-obsidian p-3.5 rounded-sm border border-rule space-y-1.5">
           <span className="label-sm text-[10px] block">Act Mandate</span>
           <p className="text-xs font-body text-paper/90 leading-relaxed">
             {selectedStep === 1 && 'Analyze manuscript prose to derive art style parameters.'}
@@ -117,6 +117,22 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               placeholder="e.g. Victorian Oil Painting"
               className="w-full px-3 py-2 bg-obsidian border border-rule-strong rounded-sm text-xs text-paper placeholder-faint focus:outline-none focus:border-oxide transition duration-fast"
             />
+          </div>
+        )}
+
+        {/* Defined Art Style Card — Placed Directly Below Act Mandate & Above Execution Button */}
+        {project.outputs?.style?.styleName && (
+          <div className="bg-obsidian p-3.5 rounded-sm border border-rule space-y-1.5 shadow-card">
+            <div className="flex items-center space-x-1.5 text-oxide">
+              <Palette className="w-3.5 h-3.5" />
+              <span className="label-sm text-[10px]">Defined Art Style</span>
+            </div>
+            <h5 className="font-display font-bold text-xs text-paper">
+              {project.outputs.style.styleName}
+            </h5>
+            <p className="text-[11px] font-body text-muted line-clamp-3 leading-relaxed">
+              {project.outputs.style.description}
+            </p>
           </div>
         )}
 
@@ -208,22 +224,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           </button>
         )}
       </div>
-
-      {/* Style Summary Card - Pinned to bottom across all steps once defined */}
-      {project.outputs?.style?.styleName && (
-        <div className="bg-obsidian p-3.5 rounded-sm border border-rule space-y-1.5 shrink-0 mt-auto shadow-card">
-          <div className="flex items-center space-x-1.5 text-oxide">
-            <Palette className="w-3.5 h-3.5" />
-            <span className="label-sm text-[10px]">Defined Art Style</span>
-          </div>
-          <h5 className="font-display font-bold text-xs text-paper">
-            {project.outputs.style.styleName}
-          </h5>
-          <p className="text-[11px] font-body text-muted line-clamp-3 leading-relaxed">
-            {project.outputs.style.description}
-          </p>
-        </div>
-      )}
     </aside>
   );
 };
