@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { ProjectData } from '@/lib/api-client';
-import { Clock, ArrowRight, Check } from 'lucide-react';
+import { Clock, ArrowRight, Check, Lock } from 'lucide-react';
+import { isStepUnlocked } from '@/lib/step-utils';
 
 interface BookSpineRowProps {
   project: ProjectData;
@@ -101,7 +102,8 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
               const state = stepStates.find(s => s.stepNumber === stepNum);
               const status = state?.status || 'pending';
               const isCompleted = status === 'done';
-              const isCurrent = status === 'running' || (stepNum === completedCount + 1 && completedCount < 5);
+              const isUnlocked = isStepUnlocked(stepNum, stepStates);
+              const isCurrent = status === 'running' || (stepNum === completedCount + 1 && completedCount < 5 && isUnlocked);
 
               return (
                 <div key={stage.num} className="flex flex-col items-center space-y-1.5">
@@ -135,6 +137,8 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
                       <Check className="w-3 h-3 stroke-[3]" />
                     ) : status === 'running' ? (
                       <span className="w-1.5 h-1.5 rounded-full bg-oxide animate-ping" />
+                    ) : !isUnlocked ? (
+                      <Lock className="w-2.5 h-2.5 text-faint stroke-[2]" />
                     ) : (
                       <span>○</span>
                     )}

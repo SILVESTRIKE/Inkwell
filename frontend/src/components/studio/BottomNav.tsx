@@ -3,6 +3,7 @@
 import React from 'react';
 import { ProjectData } from '@/lib/api-client';
 import { ArrowLeft, ArrowRight, Check, Zap, Lock } from 'lucide-react';
+import { isStepUnlocked } from '@/lib/step-utils';
 import { ACT_DEFINITIONS } from './WorkflowSidebar';
 
 interface BottomNavProps {
@@ -32,25 +33,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   const nextAct = hasNextStep ? ACT_DEFINITIONS.find(a => a.stepNumber === selectedStep + 1) : null;
   const prevAct = hasPrevStep ? ACT_DEFINITIONS.find(a => a.stepNumber === selectedStep - 1) : null;
 
-  // Check if next step is unlocked
-  const step1Done = stepStates.find(s => s.stepNumber === 1)?.status === 'done';
-  const step2Done = stepStates.find(s => s.stepNumber === 2)?.status === 'done';
-  const step3Done = stepStates.find(s => s.stepNumber === 3)?.status === 'done';
-  const step4Done = stepStates.find(s => s.stepNumber === 4)?.status === 'done';
-
-  const isStepUnlocked = (stepNum: number): boolean => {
-    if (stepNum === 1) return true;
-    if (stepNum === 2) return step1Done;
-    if (stepNum === 3) return step2Done;
-    if (stepNum === 4) return step3Done;
-    if (stepNum === 5) return step4Done;
-    return false;
-  };
+  const unlocked = (stepNum: number) => isStepUnlocked(stepNum, stepStates);
 
   const canGoNext = (): boolean => {
     if (!hasNextStep) return false;
     const nextStepNum = selectedStep + 1;
-    return isStepUnlocked(nextStepNum);
+    return unlocked(nextStepNum);
   };
 
   const handleNextClick = () => {
@@ -102,16 +90,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             const state = stepStates.find(s => s.stepNumber === act.stepNumber);
             const status = state?.status || 'pending';
             const isSelected = selectedStep === act.stepNumber;
-            const unlocked = isStepUnlocked(act.stepNumber);
+            const isUnlocked = unlocked(act.stepNumber);
 
             return (
               <div key={act.stepNumber} className="relative z-10 bg-obsidian rounded-full">
                 <button
-                  disabled={!unlocked}
-                  onClick={() => unlocked && onSelectStep(act.stepNumber)}
-                  title={!unlocked ? `Act ${act.numStr}: ${act.name} (Locked - Requires Step ${act.stepNumber - 1})` : `Act ${act.numStr}: ${act.name} (${status})`}
+                  disabled={!isUnlocked}
+                  onClick={() => isUnlocked && onSelectStep(act.stepNumber)}
+                  title={!isUnlocked ? `Act ${act.numStr}: ${act.name} (Locked - Requires prerequisites)` : `Act ${act.numStr}: ${act.name} (${status})`}
                   className={`w-7 h-7 rounded-full text-[10px] font-mono font-bold flex items-center justify-center transition-all duration-300 ${
-                    !unlocked
+                    !isUnlocked
                       ? 'bg-obsidian text-faint border-2 border-rule/50 cursor-not-allowed opacity-50'
                       : status === 'done'
                       ? 'bg-oxide text-paper border-2 border-oxide shadow-card hover:scale-110 cursor-pointer'
@@ -124,7 +112,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       : 'bg-obsidian text-muted border-2 border-rule hover:border-rule-strong cursor-pointer'
                   }`}
                 >
-                  {!unlocked ? (
+                  {!isUnlocked ? (
                     <Lock className="w-3 h-3 text-faint stroke-[2]" />
                   ) : status === 'done' ? (
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
