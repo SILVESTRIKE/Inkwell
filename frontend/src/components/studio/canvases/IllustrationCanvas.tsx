@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ProjectData, api } from '@/lib/api-client';
-import { Image as ImageIcon, Sparkles, AlertCircle, RotateCcw } from 'lucide-react';
+import { Image as ImageIcon, AlertCircle, RotateCcw } from 'lucide-react';
 
 interface IllustrationCanvasProps {
   project: ProjectData;

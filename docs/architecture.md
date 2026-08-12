@@ -191,9 +191,8 @@ GET    /api/projects
 POST   /api/projects                         { title, bookText }
 GET    /api/projects/:id
 
-POST   /api/projects/:id/steps/:step/run     { userStyle? }   -> currently 202 via queue;
-                                                                   target: synchronous 200/4xx
-POST   /api/projects/:id/steps/:step/recover                  -> target: lock-staleness-checked
+POST   /api/projects/:id/steps/:step/run     { userStyle? }   -> synchronous 200/4xx (awaits step completion)
+POST   /api/projects/:id/steps/:step/recover                  -> lock-staleness-checked, 409 if genuinely in-flight
 
 GET    /api/media/files/*                    -> streamed image/text, auth via cookie/bearer/query token
 ```

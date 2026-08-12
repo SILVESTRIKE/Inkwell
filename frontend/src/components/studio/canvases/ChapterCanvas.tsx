@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ProjectData, api } from '@/lib/api-client';
-import { BookOpen, Sparkles, ScrollText } from 'lucide-react';
+import { BookOpen, ScrollText } from 'lucide-react';
 import { ChapterCard } from '@/components/cards/ChapterCard';
 
 interface ChapterCanvasProps {

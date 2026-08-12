@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ProjectData } from '@/lib/api-client';
-import { Palette, Sparkles, Feather } from 'lucide-react';
+import { Palette, Feather } from 'lucide-react';
 
 interface StyleCanvasProps {
   project: ProjectData;

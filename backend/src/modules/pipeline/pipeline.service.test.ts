@@ -56,7 +56,7 @@ describe('PipelineService', { timeout: 15000 }, () => {
 
   it('should enforce step ordering (reject running Step 2 before Step 1 is done)', async () => {
     await expect(pipelineService.runStep(userId, projectId, 2)).rejects.toThrow(
-      'Step 2 cannot run before Step 1 is completed'
+      'Step 2 (Characters) requires Step 1 (Style) to be completed'
     );
   });
 
