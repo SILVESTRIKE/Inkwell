@@ -3,7 +3,8 @@ import path from 'path';
 import { z } from 'zod';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
-dotenv.config(); // fallback to process.env
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config(); // fallback to current working directory .env
 
 const envSchema = z.object({
   PORT: z.string().default('4000'),
@@ -11,8 +12,8 @@ const envSchema = z.object({
   MONGO_URI: z.string().default('mongodb://localhost:27017/inkwell'),
   MONGO_URI_TEST: z.string().default('mongodb://localhost:27017/inkwell_isolated_test'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
-  JWT_SECRET: z.string().default('development-jwt-secret-key-12345'),
-  JWT_REFRESH_SECRET: z.string().default('development-jwt-refresh-secret-key-67890'),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET environment variable must be provided in .env'),
+  JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET environment variable must be provided in .env'),
   GEMINI_API_KEY: z.string().optional().default(''),
   GEMINI_API_KEYS: z.string().optional().default(''),
   STORAGE_DIR: z.string().default('./uploads'),
@@ -25,16 +26,6 @@ const parsedEnv = envSchema.parse(process.env);
 
 if (process.env.NODE_ENV === 'test' && (!process.env.MONGO_URI || parsedEnv.MONGO_URI.endsWith('/inkwell'))) {
   parsedEnv.MONGO_URI = parsedEnv.MONGO_URI_TEST;
-}
-
-// Security Check: Fail-fast in production if secrets are unconfigured or using placeholders
-if (process.env.NODE_ENV === 'production') {
-  if (!process.env.JWT_SECRET || parsedEnv.JWT_SECRET.includes('change-me') || parsedEnv.JWT_SECRET === 'development-jwt-secret-key-12345') {
-    throw new Error('FATAL SECURITY ERROR: JWT_SECRET must be set to a secure string in production environment.');
-  }
-  if (!process.env.JWT_REFRESH_SECRET || parsedEnv.JWT_REFRESH_SECRET.includes('change-me') || parsedEnv.JWT_REFRESH_SECRET === 'development-jwt-refresh-secret-key-67890') {
-    throw new Error('FATAL SECURITY ERROR: JWT_REFRESH_SECRET must be set to a secure string in production environment.');
-  }
 }
 
 export const getGeminiApiKeys = (): string[] => {
