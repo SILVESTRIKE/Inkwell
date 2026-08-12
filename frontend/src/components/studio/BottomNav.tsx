@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ProjectData } from '@/lib/api-client';
-import { ArrowLeft, ArrowRight, Check, Zap } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Zap, Lock } from 'lucide-react';
 import { ACT_DEFINITIONS } from './WorkflowSidebar';
 
 interface BottomNavProps {
@@ -38,14 +38,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   const step3Done = stepStates.find(s => s.stepNumber === 3)?.status === 'done';
   const step4Done = stepStates.find(s => s.stepNumber === 4)?.status === 'done';
 
+  const isStepUnlocked = (stepNum: number): boolean => {
+    if (stepNum === 1) return true;
+    if (stepNum === 2) return step1Done;
+    if (stepNum === 3) return step2Done;
+    if (stepNum === 4) return step3Done;
+    if (stepNum === 5) return step4Done;
+    return false;
+  };
+
   const canGoNext = (): boolean => {
     if (!hasNextStep) return false;
     const nextStepNum = selectedStep + 1;
-    if (nextStepNum === 2) return step1Done;
-    if (nextStepNum === 3) return step2Done;
-    if (nextStepNum === 4) return step3Done;
-    if (nextStepNum === 5) return step4Done;
-    return false;
+    return isStepUnlocked(nextStepNum);
   };
 
   const handleNextClick = () => {
@@ -97,25 +102,31 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             const state = stepStates.find(s => s.stepNumber === act.stepNumber);
             const status = state?.status || 'pending';
             const isSelected = selectedStep === act.stepNumber;
+            const unlocked = isStepUnlocked(act.stepNumber);
 
             return (
               <div key={act.stepNumber} className="relative z-10 bg-obsidian rounded-full">
                 <button
-                  onClick={() => onSelectStep(act.stepNumber)}
-                  title={`Act ${act.numStr}: ${act.name} (${status})`}
-                  className={`w-7 h-7 rounded-full text-[10px] font-mono font-bold flex items-center justify-center transition-all duration-300 cursor-pointer ${
-                    status === 'done'
-                      ? 'bg-oxide text-paper border-2 border-oxide shadow-card hover:scale-110'
+                  disabled={!unlocked}
+                  onClick={() => unlocked && onSelectStep(act.stepNumber)}
+                  title={!unlocked ? `Act ${act.numStr}: ${act.name} (Locked - Requires Step ${act.stepNumber - 1})` : `Act ${act.numStr}: ${act.name} (${status})`}
+                  className={`w-7 h-7 rounded-full text-[10px] font-mono font-bold flex items-center justify-center transition-all duration-300 ${
+                    !unlocked
+                      ? 'bg-obsidian text-faint border-2 border-rule/50 cursor-not-allowed opacity-50'
+                      : status === 'done'
+                      ? 'bg-oxide text-paper border-2 border-oxide shadow-card hover:scale-110 cursor-pointer'
                       : status === 'failed'
-                      ? 'bg-obsidian text-error border-2 border-error ring-2 ring-error/30'
+                      ? 'bg-obsidian text-error border-2 border-error ring-2 ring-error/30 cursor-pointer'
                       : status === 'running'
-                      ? 'bg-obsidian text-oxide border-2 border-oxide animate-pulse ring-2 ring-oxide/30'
+                      ? 'bg-obsidian text-oxide border-2 border-oxide animate-pulse ring-2 ring-oxide/30 cursor-pointer'
                       : isSelected
-                      ? 'bg-charcoal text-paper border-2 border-paper ring-2 ring-paper/20 scale-105'
-                      : 'bg-obsidian text-muted border-2 border-rule hover:border-rule-strong'
+                      ? 'bg-charcoal text-paper border-2 border-paper ring-2 ring-paper/20 scale-105 cursor-pointer'
+                      : 'bg-obsidian text-muted border-2 border-rule hover:border-rule-strong cursor-pointer'
                   }`}
                 >
-                  {status === 'done' ? (
+                  {!unlocked ? (
+                    <Lock className="w-3 h-3 text-faint stroke-[2]" />
+                  ) : status === 'done' ? (
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   ) : (
                     <span>{act.numStr}</span>
