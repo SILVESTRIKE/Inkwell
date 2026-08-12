@@ -11,8 +11,8 @@ export const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="bg-charcoal border-b border-rule sticky top-0 z-30 px-4 py-3 sm:px-8">
-      <div className="max-w-5xl mx-auto flex items-center justify-between">
+    <header className="bg-charcoal border-b border-rule sticky top-0 z-30 px-4 py-2.5 sm:px-8 font-ui">
+      <div className="w-full flex items-center justify-between">
         <Link href="/projects" className="flex items-center space-x-2 group">
           <span className="text-xl font-display font-bold text-paper tracking-tight group-hover:text-oxide transition-colors duration-fast">
             Inkwell
