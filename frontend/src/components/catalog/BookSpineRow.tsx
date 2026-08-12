@@ -50,46 +50,52 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
     <article className="group relative transition-all duration-300">
       <Link
         href={`/projects/${project._id}`}
-        className="block bg-charcoal hover:bg-obsidian border border-rule border-l-4 border-l-oxide/70 hover:border-l-oxide rounded-sm p-6 sm:p-7 shadow-card hover:shadow-card-hover transition-all duration-base transform hover:-translate-y-0.5 hover:translate-x-1.5 cursor-pointer space-y-5"
+        className="block relative bg-charcoal hover:bg-obsidian border border-rule border-l-4 border-l-oxide/70 hover:border-l-oxide rounded-sm p-6 sm:p-7 shadow-card hover:shadow-card-hover transition-all duration-base transform hover:-translate-y-0.5 hover:translate-x-1.5 cursor-pointer overflow-hidden"
         style={{ animationDelay: `${index * 80}ms` }}
       >
-        {/* 1. Spine Header: Title, Quote & Lifecycle Status */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="min-w-0 flex-1 space-y-1">
-            <h3 className="font-display font-bold text-xl sm:text-2xl text-paper group-hover:text-oxide transition-colors duration-fast truncate tracking-tight">
-              {project.title}
-            </h3>
-            {excerpt && (
-              <p className="text-xs font-body text-paper/60 line-clamp-1 italic leading-relaxed">
-                "{excerpt}"
-              </p>
-            )}
+        {/* Background Ink Fill Bar across the ENTIRE Book Spine */}
+        <div
+          className="absolute bottom-0 left-0 top-0 bg-oxide/15 group-hover:bg-oxide/20 border-r border-oxide/40 transition-all duration-700 pointer-events-none"
+          style={{ width: `${fillPercentage}%` }}
+        />
+
+        {/* Book Spine Contents */}
+        <div className="relative z-10 space-y-5">
+          {/* 1. Spine Header: Title, Quote & Lifecycle Status */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="min-w-0 flex-1 space-y-1">
+              <h3 className="font-display font-bold text-xl sm:text-2xl text-paper group-hover:text-oxide transition-colors duration-fast truncate tracking-tight">
+                {project.title}
+              </h3>
+              {excerpt && (
+                <p className="text-xs font-body text-paper/70 line-clamp-1 italic leading-relaxed">
+                  "{excerpt}"
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-3 shrink-0 font-mono text-xs">
+              <span className="text-muted text-[11px] flex items-center space-x-1.5">
+                <Clock className="w-3.5 h-3.5 text-oxide" />
+                <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+              </span>
+
+              <span
+                className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-xs border ${
+                  lifecycleState === 'DONE'
+                    ? 'bg-success/15 text-success border-success/40'
+                    : lifecycleState === 'IN PROGRESS'
+                    ? 'bg-oxide-soft text-oxide border-oxide/40'
+                    : 'bg-obsidian text-muted border-rule'
+                }`}
+              >
+                {lifecycleState}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-3 shrink-0 font-mono text-xs">
-            <span className="text-muted text-[11px] flex items-center space-x-1.5">
-              <Clock className="w-3.5 h-3.5 text-oxide" />
-              <span>{new Date(project.createdAt).toLocaleDateString()}</span>
-            </span>
-
-            <span
-              className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-xs border ${
-                lifecycleState === 'DONE'
-                  ? 'bg-success/15 text-success border-success/40'
-                  : lifecycleState === 'IN PROGRESS'
-                  ? 'bg-oxide-soft text-oxide border-oxide/40'
-                  : 'bg-obsidian text-muted border-rule'
-              }`}
-            >
-              {lifecycleState}
-            </span>
-          </div>
-        </div>
-
-        {/* 2. 5-Act Progression: Minimal Symbols + Hover Reveal Labels + Ink Progress Fill Bar */}
-        <div className="space-y-3 font-ui pt-1">
-          {/* Symbols Grid (Minimalist Symbols + Hover Reveal Text) */}
-          <div className="grid grid-cols-5 gap-2 text-center items-end">
+          {/* 2. 5-Act Progression: Minimal Symbols + Hover Reveal Labels */}
+          <div className="grid grid-cols-5 gap-2 text-center items-end pt-2 font-ui">
             {STAGES.map((stage, idx) => {
               const stepNum = idx + 1;
               const state = stepStates.find(s => s.stepNumber === stepNum);
@@ -100,7 +106,7 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
 
               return (
                 <div key={stage.num} className="flex flex-col items-center space-y-1.5">
-                  {/* Step Label: Hidden by default, Reveals on Hover */}
+                  {/* Step Label: Hidden by default, reveals on hover */}
                   <span
                     className={`text-[10px] font-mono font-semibold tracking-wider transition-all duration-300 opacity-0 group-hover:opacity-100 ${
                       isCompleted
@@ -116,7 +122,7 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
                   {/* Minimal Stage Symbol (✓, ●, o, 🔒) */}
                   <div className="h-5 flex items-center justify-center font-mono text-xs">
                     {isCompleted ? (
-                      <span className="text-oxide font-bold text-sm">✓</span>
+                      <span className="text-oxide font-bold text-base">✓</span>
                     ) : status === 'running' ? (
                       <span className="w-2 h-2 rounded-full bg-oxide animate-ping inline-block" />
                     ) : isCurrent ? (
@@ -132,26 +138,12 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
             })}
           </div>
 
-          {/* Continuous Ink Fill Loading Bar */}
-          <div className="relative w-full h-2 bg-obsidian border border-rule/60 rounded-xs overflow-hidden">
-            <div
-              className={`h-full transition-all duration-700 rounded-xs ${
-                lifecycleState === 'DONE'
-                  ? 'bg-oxide'
-                  : isRunning
-                  ? 'bg-oxide animate-pulse'
-                  : 'bg-oxide'
-              }`}
-              style={{ width: `${fillPercentage}%` }}
-            />
-          </div>
-        </div>
-
-        {/* 3. Footer CTA: Hidden by default, Reveals on Hover */}
-        <div className="flex items-center justify-end h-5">
-          <div className="flex items-center space-x-1.5 text-xs font-semibold uppercase tracking-wider text-oxide transition-all duration-300 opacity-0 group-hover:opacity-100">
-            <span>{ctaText}</span>
-            <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform duration-fast" />
+          {/* 3. Footer CTA: Hidden by default, reveals on hover */}
+          <div className="flex items-center justify-end h-5 pt-1 font-ui">
+            <div className="flex items-center space-x-1.5 text-xs font-semibold uppercase tracking-wider text-oxide transition-all duration-300 opacity-0 group-hover:opacity-100">
+              <span>{ctaText}</span>
+              <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform duration-fast" />
+            </div>
           </div>
         </div>
       </Link>
