@@ -29,7 +29,7 @@ export class PipelineService {
       throw new NotFoundError('Project not found');
     }
 
-    // Step ordering verification
+    // Strict linear step ordering verification (Option A: Step N requires Step N-1 to be completed)
     if (stepNumber === 2) {
       const step1 = project.stepStates.find(s => s.stepNumber === 1);
       if (!step1 || step1.status !== 'done') {
@@ -41,16 +41,14 @@ export class PipelineService {
         throw new BadRequestError('Step 3 (Portraits) requires Step 2 (Characters) to be completed');
       }
     } else if (stepNumber === 4) {
-      const step1 = project.stepStates.find(s => s.stepNumber === 1);
-      const step2 = project.stepStates.find(s => s.stepNumber === 2);
-      if (!step1 || step1.status !== 'done' || !step2 || step2.status !== 'done') {
-        throw new BadRequestError('Step 4 (Chapters) requires Step 1 (Style) and Step 2 (Characters) to be completed');
+      const step3 = project.stepStates.find(s => s.stepNumber === 3);
+      if (!step3 || step3.status !== 'done') {
+        throw new BadRequestError('Step 4 (Chapters) requires Step 3 (Portraits) to be completed');
       }
     } else if (stepNumber === 5) {
-      const step3 = project.stepStates.find(s => s.stepNumber === 3);
       const step4 = project.stepStates.find(s => s.stepNumber === 4);
-      if (!step3 || step3.status !== 'done' || !step4 || step4.status !== 'done') {
-        throw new BadRequestError('Step 5 (Illustrations) requires both Step 3 (Portraits) and Step 4 (Chapters) to be completed');
+      if (!step4 || step4.status !== 'done') {
+        throw new BadRequestError('Step 5 (Illustrations) requires Step 4 (Chapters) to be completed');
       }
     }
 

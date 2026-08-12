@@ -102,6 +102,33 @@ We redesigned the frontend using a **Neo-Editorial Layout** inspired by contempo
 
 ---
 
+## Strict Total-Order Linear Pipeline Execution (Option A)
+
+The assessment specification (§4.3) requires: *"User-driven, in order. Each step needs an explicit user action. A step cannot run before the previous ones have succeeded"*. 
+
+We evaluated two architectural patterns:
+- **Option A (Strict Total Order)**: Step N strictly requires Step N-1 to be completed (`'done'`). Step 4 (Chapters) requires Step 3 (Portraits).
+- **Option B (Selective Dependency Graph)**: Allowing Step 4 (Chapters text analysis) to run while Step 3 (Portraits image generation) sits failed.
+
+We chose **Option A (Strict Total Order)** because:
+1. **Spec Compliance**: §4.3 specifies a strict linear sequence, not a complex DAG. The 5-act stepper UI (`01` → `02` → `03` → `04` → `05`) is inherently a total-order linear progress bar.
+2. **Constraint Bottleneck Realities**: Step 5 (Illustrations) requires both Step 3 (Portraits) and Step 4 (Chapters). Branching around Step 3 only delays the image quota ceiling by one step, while introducing unnecessary state machine complexity.
+3. **Simplicity & Safety**: Eliminates illegal state combinations and keeps prerequisite checking predictable across backend and frontend.
+
+Cost accepted: If Step 3 encounters an image rate limit (429), the user must wait out the rate limit and retry Step 3 before proceeding to Step 4.
+
+---
+
+## Development Mode Mock Image Fallback for Quota Resilience
+
+To allow full end-to-end flow testing of the 5-act pipeline without getting blocked by Gemini free-tier image API rate limits (15 RPM / tight daily ceilings), we updated `GeminiClient.generateImage`:
+- **In Development Mode (`NODE_ENV === 'development'`)**: If all Gemini API keys hit a `429` rate limit or quota ceiling during development testing, `GeminiClient` logs a warning (`[GeminiClient] Image API 429 rate-limited in development environment. Using mock image buffer...`) and returns a mock SVG image buffer. This allows full 5-act pipeline flow testing from Step 1 to Step 5 without stalling developer iteration.
+- **In Production Mode (`NODE_ENV === 'production'`)**: Live Gemini API errors throw directly so step state transitions to `'failed'` and triggers explicit user-driven retries (§4.3 hard constraint).
+
+Cost accepted: Developers see mock image placeholders during heavy 429 quota exhaustion in development, but production error propagation and user retry controls remain 100% strict.
+
+---
+
 ## Architectural Trade-Off Matrix
 
 | Decision Area | Choice Implemented | Alternative Considered | Trade-Off / Reason |
