@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Project, IProject } from './project.model';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
 import { saveProjectFile } from '../../shared/storage/file.storage';
@@ -14,10 +15,14 @@ export class ProjectsService {
       throw new BadRequestError('Book text is required', 'bookText');
     }
 
+    const trimmedText = bookText.trim();
+    const bookChecksum = crypto.createHash('sha256').update(trimmedText).digest('hex');
+
     const project = new Project({
       userId,
       title: title.trim(),
-      bookText: bookText.trim(),
+      bookText: trimmedText,
+      bookChecksum,
       overallStatus: 'draft',
       currentStepNumber: 1,
       stepStates: [
@@ -59,5 +64,11 @@ export class ProjectsService {
       throw new NotFoundError('Project not found');
     }
     return project;
+  }
+
+  async checkExistingBook(userId: string, bookText: string): Promise<IProject | null> {
+    if (!bookText || !bookText.trim()) return null;
+    const checksum = crypto.createHash('sha256').update(bookText.trim()).digest('hex');
+    return await Project.findOne({ userId, bookChecksum: checksum, isDeleted: { $ne: true } });
   }
 }

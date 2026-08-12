@@ -42,6 +42,7 @@ export interface IProject extends Document {
   userId: string;
   title: string;
   bookText: string;
+  bookChecksum?: string;
   cachedContentName?: string;
   isDeleted?: boolean;
   createdAt: Date;
@@ -82,6 +83,7 @@ const ProjectSchema: Schema = new Schema(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     title: { type: String, required: true },
     bookText: { type: String, required: true },
+    bookChecksum: { type: String, index: true },
     cachedContentName: { type: String },
     isDeleted: { type: Boolean, default: false },
     overallStatus: { type: String, enum: ['draft', 'in_progress', 'done'], default: 'draft' },

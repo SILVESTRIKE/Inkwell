@@ -15,6 +15,7 @@ export default function NewProjectPage() {
   const [title, setTitle] = useState('');
   const [bookText, setBookText] = useState('');
   const [error, setError] = useState('');
+  const [duplicateProject, setDuplicateProject] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,6 +36,18 @@ export default function NewProjectPage() {
     reader.readAsText(file);
   };
 
+  const executeCreate = async () => {
+    try {
+      setSubmitting(true);
+      setError('');
+      const project = await api.createProject(title.trim(), bookText.trim());
+      router.push(`/projects/${project._id}`);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create project.');
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -49,10 +62,16 @@ export default function NewProjectPage() {
     try {
       setSubmitting(true);
       setError('');
-      const project = await api.createProject(title.trim(), bookText.trim());
-      router.push(`/projects/${project._id}`);
+      // Check if raw book text matches an existing project
+      const checkRes = await api.checkBook(bookText.trim());
+      if (checkRes.exists && checkRes.project) {
+        setDuplicateProject(checkRes.project);
+        setSubmitting(false);
+        return;
+      }
+      await executeCreate();
     } catch (err: any) {
-      setError(err.message || 'Failed to create project.');
+      setError(err.message || 'Failed to check book manuscript.');
       setSubmitting(false);
     }
   };
@@ -150,6 +169,43 @@ export default function NewProjectPage() {
           </button>
         </div>
       </form>
+
+      {/* Duplicate Manuscript Detected Modal */}
+      {duplicateProject && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-charcoal border border-rule rounded-md p-6 max-w-md w-full space-y-4 shadow-card font-ui">
+            <div className="flex items-center space-x-3 text-oxide">
+              <FileText className="w-6 h-6" />
+              <h3 className="text-lg font-display font-bold text-paper">Existing Book Content Detected</h3>
+            </div>
+            <p className="text-xs text-muted leading-relaxed">
+              This exact raw manuscript text already exists in your project catalog under title:
+            </p>
+            <div className="p-3 bg-obsidian border border-rule rounded-sm text-xs text-paper font-semibold">
+              {duplicateProject.title}
+            </div>
+            <p className="text-xs text-muted leading-relaxed">
+              You can open the existing project to view/retry pipeline steps, or create a brand new duplicate project.
+            </p>
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-rule">
+              <button
+                type="button"
+                onClick={() => executeCreate()}
+                className="px-3.5 py-2 bg-obsidian hover:bg-charcoal text-muted hover:text-paper border border-rule rounded-sm text-xs font-medium transition duration-fast"
+              >
+                Create New Duplicate
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(`/projects/${duplicateProject._id}`)}
+                className="px-4 py-2 bg-oxide hover:bg-oxide-hover text-paper rounded-sm text-xs font-semibold uppercase tracking-wider transition duration-fast"
+              >
+                Open Existing Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
