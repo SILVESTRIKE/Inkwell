@@ -9,6 +9,7 @@ const envSchema = z.object({
   PORT: z.string().default('4000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   MONGO_URI: z.string().default('mongodb://localhost:27017/inkwell'),
+  MONGO_URI_TEST: z.string().default('mongodb://localhost:27017/inkwell_isolated_test'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   JWT_SECRET: z.string().default('development-jwt-secret-key-12345'),
   JWT_REFRESH_SECRET: z.string().default('development-jwt-refresh-secret-key-67890'),
@@ -23,7 +24,7 @@ const envSchema = z.object({
 const parsedEnv = envSchema.parse(process.env);
 
 if (process.env.NODE_ENV === 'test' && (!process.env.MONGO_URI || parsedEnv.MONGO_URI.endsWith('/inkwell'))) {
-  parsedEnv.MONGO_URI = 'mongodb://localhost:27017/inkwell_test';
+  parsedEnv.MONGO_URI = parsedEnv.MONGO_URI_TEST;
 }
 
 export const getGeminiApiKeys = (): string[] => {
