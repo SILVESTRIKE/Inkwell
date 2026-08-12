@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 const STORAGE_KEY = 'inkwell_session';
 const LEGACY_STORAGE_KEY = 'book_studio_session';
 
