@@ -99,28 +99,29 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             const isSelected = selectedStep === act.stepNumber;
 
             return (
-              <button
-                key={act.stepNumber}
-                onClick={() => onSelectStep(act.stepNumber)}
-                title={`Act ${act.numStr}: ${act.name} (${status})`}
-                className={`relative z-10 w-7 h-7 rounded-full text-[10px] font-mono font-bold flex items-center justify-center transition-all duration-300 cursor-pointer ${
-                  status === 'done'
-                    ? 'bg-oxide text-paper border-2 border-oxide shadow-card hover:scale-110'
-                    : status === 'failed'
-                    ? 'bg-error-bg text-error border-2 border-error ring-2 ring-error/30'
-                    : status === 'running'
-                    ? 'bg-oxide-soft text-oxide border-2 border-oxide animate-pulse ring-2 ring-oxide/30'
-                    : isSelected
-                    ? 'bg-charcoal text-paper border-2 border-paper ring-2 ring-paper/20 scale-105'
-                    : 'bg-obsidian text-muted border-2 border-rule hover:border-rule-strong'
-                }`}
-              >
-                {status === 'done' ? (
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                ) : (
-                  <span>{act.numStr}</span>
-                )}
-              </button>
+              <div key={act.stepNumber} className="relative z-10 bg-obsidian rounded-full">
+                <button
+                  onClick={() => onSelectStep(act.stepNumber)}
+                  title={`Act ${act.numStr}: ${act.name} (${status})`}
+                  className={`w-7 h-7 rounded-full text-[10px] font-mono font-bold flex items-center justify-center transition-all duration-300 cursor-pointer ${
+                    status === 'done'
+                      ? 'bg-oxide text-paper border-2 border-oxide shadow-card hover:scale-110'
+                      : status === 'failed'
+                      ? 'bg-obsidian text-error border-2 border-error ring-2 ring-error/30'
+                      : status === 'running'
+                      ? 'bg-obsidian text-oxide border-2 border-oxide animate-pulse ring-2 ring-oxide/30'
+                      : isSelected
+                      ? 'bg-charcoal text-paper border-2 border-paper ring-2 ring-paper/20 scale-105'
+                      : 'bg-obsidian text-muted border-2 border-rule hover:border-rule-strong'
+                  }`}
+                >
+                  {status === 'done' ? (
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  ) : (
+                    <span>{act.numStr}</span>
+                  )}
+                </button>
+              </div>
             );
           })}
         </div>
