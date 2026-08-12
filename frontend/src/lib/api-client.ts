@@ -268,6 +268,13 @@ export const api = {
     return await request<ProjectData>(`/api/projects/${id}`);
   },
 
+  async deleteProject(id: string): Promise<{ message: string }> {
+    return await request<{ message: string }>(`/api/projects/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+
   async runStep(projectId: string, stepNumber: number, userStyle?: string): Promise<ProjectData> {
     const result = await request<{ message: string; jobId: string; project: ProjectData }>(
       `/api/projects/${projectId}/steps/${stepNumber}/run`,

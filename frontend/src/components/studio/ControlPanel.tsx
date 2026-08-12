@@ -144,38 +144,26 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           </div>
         )}
 
-        {/* Failure Callout Card & Action Buttons */}
+        {/* Streamlined Retry Action Buttons when status === 'failed' */}
         {status === 'failed' && (
-          <div className="p-4 bg-error-bg border border-error/40 rounded-md text-error space-y-3 shadow-card">
-            <div className="flex items-start space-x-2.5">
-              <AlertCircle className="w-4 h-4 text-error shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h4 className="text-xs font-bold uppercase tracking-wider">Act Execution Failed</h4>
-                <p className="text-xs text-error/95 font-medium leading-relaxed">
-                  {cleanErrorMessage(currentState?.error)}
-                </p>
-              </div>
-            </div>
+          <div className="flex items-center space-x-2 pt-1">
+            <button
+              onClick={() => onRunStep(selectedStep)}
+              disabled={isRunningAnyStep}
+              className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-error hover:bg-error/90 text-paper rounded-sm text-xs font-bold uppercase tracking-wider transition duration-fast cursor-pointer shadow-card disabled:opacity-50"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Retry Act {selectedStep}</span>
+            </button>
 
-            <div className="flex items-center space-x-2 pt-1">
-              <button
-                onClick={() => onRunStep(selectedStep)}
-                disabled={isRunningAnyStep}
-                className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 bg-error text-paper rounded-sm text-xs font-bold uppercase tracking-wider hover:opacity-90 transition duration-fast cursor-pointer shadow-sm disabled:opacity-50"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Retry Act {selectedStep}</span>
-              </button>
-
-              <button
-                onClick={() => onRecoverStep(selectedStep)}
-                disabled={recovering}
-                className="p-2 bg-obsidian text-muted hover:text-paper border border-rule rounded-sm text-xs transition duration-fast cursor-pointer"
-                title="Reset step state lock"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <button
+              onClick={() => onRecoverStep(selectedStep)}
+              disabled={recovering}
+              className="p-3 bg-obsidian text-muted hover:text-paper border border-rule rounded-sm text-xs transition duration-fast cursor-pointer"
+              title="Reset step state lock"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${recovering ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         )}
 

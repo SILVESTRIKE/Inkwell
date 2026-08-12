@@ -107,7 +107,12 @@ export default function ProjectsPage() {
         /* Horizontal Book Spine Vertical Archive Stack */
         <div className="space-y-4 sm:space-y-5">
           {projects.map((project, index) => (
-            <BookSpineRow key={project._id} project={project} index={index} />
+            <BookSpineRow
+              key={project._id}
+              project={project}
+              index={index}
+              onDelete={(deletedId) => setProjects(prev => prev.filter(p => p._id !== deletedId))}
+            />
           ))}
         </div>
       )}

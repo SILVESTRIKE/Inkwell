@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ProjectData, api } from '@/lib/api-client';
-import { Image as ImageIcon, User, AlertCircle } from 'lucide-react';
+import { Image as ImageIcon, User, AlertCircle, RotateCcw } from 'lucide-react';
 
 interface PortraitsCanvasProps {
   project: ProjectData;
@@ -14,6 +14,7 @@ export const PortraitsCanvas: React.FC<PortraitsCanvasProps> = ({ project, onRun
   const stepStates = project.stepStates || [];
   const step3State = stepStates.find(s => s.stepNumber === 3);
   const isFailed = step3State?.status === 'failed';
+  const rawError = step3State?.error;
 
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
@@ -21,17 +22,77 @@ export const PortraitsCanvas: React.FC<PortraitsCanvasProps> = ({ project, onRun
     setFailedImages(prev => ({ ...prev, [charId]: true }));
   };
 
-  if (characters.length === 0) {
+  const hasPortraits = characters.some(c => c.portraitFilename);
+
+  // 1. Failed State: Render Central Error Card
+  if (isFailed && !hasPortraits) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-8 text-center font-ui space-y-4 max-w-md mx-auto">
-        <div className="w-12 h-12 bg-charcoal border border-rule rounded-md flex items-center justify-center text-oxide">
-          <User className="w-6 h-6 stroke-[1.5]" />
+      <div className="h-full flex flex-col items-center justify-center p-6 text-center font-ui space-y-5 max-w-lg mx-auto animate-in fade-in duration-300">
+        <div className="w-14 h-14 bg-error-bg border border-error/40 rounded-md flex items-center justify-center text-error shadow-card">
+          <AlertCircle className="w-7 h-7 stroke-[1.5]" />
         </div>
-        <div>
-          <h3 className="font-display font-bold text-2xl text-paper">Generate Character Portraits</h3>
-          <p className="text-sm font-body text-muted mt-2 leading-relaxed">
-            Act 03 renders high-resolution visual portraits for extracted characters using Gemini image generation.
+        <div className="space-y-2">
+          <span className="label-sm text-[10px] text-error font-bold tracking-widest uppercase">Act 03 Execution Interrupted</span>
+          <h3 className="font-display font-bold text-2xl text-paper">Failed to Render Portraits</h3>
+          <p className="text-xs font-body text-error/90 bg-error-bg/50 border border-error/30 p-3.5 rounded-sm leading-relaxed text-left">
+            {rawError || 'Gemini API call failed or timed out. Your previous step outputs are safely preserved.'}
           </p>
+        </div>
+        <button
+          onClick={() => onRunStep(3)}
+          className="w-full flex items-center justify-center space-x-2 py-3 px-5 bg-error hover:bg-error/90 text-paper font-bold text-xs uppercase tracking-wider rounded-sm shadow-card transition duration-fast cursor-pointer"
+        >
+          <RotateCcw className="w-4 h-4" />
+          <span>Retry Act 03 (Portraits)</span>
+        </button>
+      </div>
+    );
+  }
+
+  // 2. Pending State: Render Previous Context Preview (Character prompts from Step 2)
+  if (!hasPortraits && !isFailed) {
+    return (
+      <div className="space-y-6 font-ui max-w-4xl mx-auto p-4 sm:p-6 animate-in fade-in-50 duration-300">
+        <div className="text-center space-y-2 max-w-xl mx-auto">
+          <span className="label-sm text-[10px] text-oxide">Act 03 — Portrait Rendering</span>
+          <h3 className="font-display font-bold text-2xl sm:text-3xl text-paper">Generate Character Portraits</h3>
+          <p className="text-xs sm:text-sm font-body text-muted leading-relaxed">
+            Act 03 uses Gemini image generation to render high-resolution visual portraits for your adult main characters.
+          </p>
+        </div>
+
+        {/* Previous Context Cards */}
+        <div className="bg-charcoal border border-rule rounded-md p-5 space-y-4 shadow-card">
+          <span className="label-sm text-[10px] text-muted block">Input Context — Act 02 Extracted Characters</span>
+          {characters.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {characters.map(char => (
+                <div key={char.id} className="bg-obsidian p-4 rounded-sm border border-rule space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h5 className="font-display font-bold text-sm text-paper">{char.name}</h5>
+                    <span className="text-[10px] text-oxide font-mono uppercase">Adult Main</span>
+                  </div>
+                  <p className="text-xs font-body text-muted line-clamp-2">{char.description}</p>
+                  <div className="bg-charcoal p-2 rounded-xs border border-rule text-[11px] text-paper/80 font-mono line-clamp-2">
+                    {char.imagePrompt}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted italic">No characters found.</p>
+          )}
+        </div>
+
+        {/* Primary Run Step CTA */}
+        <div className="pt-2 flex justify-center">
+          <button
+            onClick={() => onRunStep(3)}
+            className="px-6 py-3.5 bg-oxide hover:bg-oxide-hover text-paper font-bold text-xs uppercase tracking-wider rounded-sm shadow-card transition duration-fast cursor-pointer flex items-center space-x-2"
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>Generate Act 03 Character Portraits</span>
+          </button>
         </div>
       </div>
     );

@@ -11,5 +11,7 @@ router.post('/check-book', (req, res, next) => controller.checkBook(req as any, 
 router.post('/', (req, res, next) => controller.createProject(req as any, res, next));
 router.get('/', (req, res, next) => controller.listProjects(req as any, res, next));
 router.get('/:id', (req, res, next) => controller.getProject(req as any, res, next));
+router.delete('/:id', (req, res, next) => controller.deleteProject(req as any, res, next));
 
 export default router;
+
