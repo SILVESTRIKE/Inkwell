@@ -7,8 +7,11 @@ describe('AuthService', () => {
   let authService: AuthService;
 
   beforeAll(async () => {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/inkwell-auth-test';
+    const mongoUri = process.env.MONGO_URI_TEST || 'mongodb://localhost:27017/inkwell_isolated_test';
     try {
+      if (mongoose.connection.readyState !== 0) {
+        await mongoose.disconnect();
+      }
       await mongoose.connect(mongoUri);
     } catch {
       // ignore if already connected
@@ -18,6 +21,7 @@ describe('AuthService', () => {
 
   afterAll(async () => {
     if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.db?.dropDatabase();
       await mongoose.connection.close();
     }
   });

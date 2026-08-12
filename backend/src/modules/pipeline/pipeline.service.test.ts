@@ -17,9 +17,11 @@ describe('PipelineService', { timeout: 15000 }, () => {
     delete process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_API_KEYS;
 
-    // Connect to in-memory / local mongodb test instance
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/inkwell_test';
+    const mongoUri = process.env.MONGO_URI_TEST || 'mongodb://localhost:27017/inkwell_isolated_test';
     try {
+      if (mongoose.connection.readyState !== 0) {
+        await mongoose.disconnect();
+      }
       await mongoose.connect(mongoUri);
     } catch {
       // ignore if already connected
@@ -31,6 +33,7 @@ describe('PipelineService', { timeout: 15000 }, () => {
 
   afterAll(async () => {
     if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.db?.dropDatabase();
       await mongoose.connection.close();
     }
   });
