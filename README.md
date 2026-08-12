@@ -50,10 +50,12 @@ Run backend and frontend test suites in one command:
 ## Architecture, Concurrency & Security
 
 - **Backend:** Express with feature-module structure (`auth`, `projects`, `pipeline`, `media`).
-- **Direct Async Processing:**
-  - Clicking "Run Step" responds immediately with `202 Accepted`.
-  - Non-blocking background task executes Gemini API calls, saves images, and updates Mongo.
-  - Retries are 100% user-triggered (§4.3 requirement).
+- **Synchronous Step Execution:**
+  - Clicking "Run Step" holds the request open until the step genuinely finishes (or fails) —
+    the response is `200` with the completed project state, not a `202`/background dispatch.
+  - No queue, no worker process — a single Express request handling one bounded, slow-but-finite
+    Gemini call is the right-sized solution at this scope (see `docs/architecture.md` §4).
+  - Retries are 100% user-triggered (§4.3 requirement) — nothing auto-retries in a loop.
 - **Concurrency & Concurrency Locks:**
   - Redis manages short-lived step locks (`lock:project:<id>:step:<n>`) with TTL to guarantee no duplicate Gemini calls across tabs or refreshes (`409 Conflict`).
 - **Security & Media Storage:**
