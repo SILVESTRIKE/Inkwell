@@ -37,7 +37,7 @@ export const CharactersCanvas: React.FC<CharactersCanvasProps> = ({ project, onR
   }
 
   return (
-    <div className="space-y-6 font-ui max-w-4xl mx-auto p-4 sm:p-6">
+    <div className="space-y-6 font-ui max-w-4xl mx-auto p-4 sm:p-6 animate-in fade-in-50 duration-300">
       {/* Header Bar */}
       <div className="flex items-center justify-between border-b border-rule pb-4">
         <div className="flex items-center space-x-2.5">
