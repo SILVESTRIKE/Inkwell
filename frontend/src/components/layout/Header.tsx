@@ -25,7 +25,7 @@ export const Header: React.FC = () => {
         <div className="flex items-center space-x-4">
           <button
             onClick={toggleTheme}
-            className="p-1.5 rounded-sm text-muted hover:text-paper hover:bg-obsidian transition-colors duration-fast"
+            className="p-1.5 rounded-sm text-muted hover:text-paper hover:bg-obsidian transition-colors duration-fast cursor-pointer"
             title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -39,11 +39,11 @@ export const Header: React.FC = () => {
               </div>
               <button
                 onClick={logout}
-                className="flex items-center space-x-1.5 px-2.5 py-1 text-muted hover:text-paper text-xs font-medium transition-colors duration-fast"
+                className="flex items-center space-x-1.5 px-2.5 py-1 text-muted hover:text-paper text-xs font-medium transition-colors duration-fast cursor-pointer"
                 title="Sign Out"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sign Out</span>
+                <LogOut className="w-3.5 h-3.5 text-oxide" />
+                <span>Sign Out</span>
               </button>
             </div>
           )}
