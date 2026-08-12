@@ -78,31 +78,48 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <span>{prevAct ? `Back: ${prevAct.name}` : 'Back'}</span>
       </button>
 
-      {/* Center: 5-Dot Step Progress Indicator */}
-      <div className="hidden sm:flex items-center space-x-3 text-xs">
-        <span className="text-muted text-[11px] font-mono">{completedCount} / 5 Acts Done</span>
-        <div className="flex items-center space-x-2">
+      {/* Center: Connected Book Chapter Pipeline Stepper */}
+      <div className="hidden md:flex items-center space-x-4 text-xs">
+        <span className="text-muted text-[11px] font-mono shrink-0">{completedCount} / 5 Acts Done</span>
+
+        {/* Connected Track & Stepper Nodes */}
+        <div className="relative flex items-center justify-between w-64 sm:w-72 px-2 py-1">
+          {/* Background Track Line */}
+          <div className="absolute top-1/2 left-3 right-3 h-0.5 bg-rule -translate-y-1/2 rounded-full" />
+
+          {/* Active Progress Fill Line */}
+          <div
+            className="absolute top-1/2 left-3 h-0.5 bg-oxide -translate-y-1/2 transition-all duration-500 rounded-full"
+            style={{ width: `${((Math.max(1, selectedStep) - 1) / 4) * 100}%` }}
+          />
+
           {ACT_DEFINITIONS.map(act => {
             const state = stepStates.find(s => s.stepNumber === act.stepNumber);
             const status = state?.status || 'pending';
-            const isCurrent = selectedStep === act.stepNumber;
+            const isSelected = selectedStep === act.stepNumber;
 
             return (
               <button
                 key={act.stepNumber}
                 onClick={() => onSelectStep(act.stepNumber)}
-                title={`Act ${act.numStr}: ${act.name}`}
-                className={`w-3 h-3 rounded-full transition-all duration-fast flex items-center justify-center ${
+                title={`Act ${act.numStr}: ${act.name} (${status})`}
+                className={`relative z-10 w-7 h-7 rounded-full text-[10px] font-mono font-bold flex items-center justify-center transition-all duration-300 cursor-pointer ${
                   status === 'done'
-                    ? 'bg-success text-obsidian'
+                    ? 'bg-oxide text-paper border-2 border-oxide shadow-card hover:scale-110'
                     : status === 'failed'
-                    ? 'bg-error'
-                    : isCurrent
-                    ? 'bg-oxide ring-2 ring-oxide-soft'
-                    : 'bg-sunken border border-rule'
+                    ? 'bg-error-bg text-error border-2 border-error ring-2 ring-error/30'
+                    : status === 'running'
+                    ? 'bg-oxide-soft text-oxide border-2 border-oxide animate-pulse ring-2 ring-oxide/30'
+                    : isSelected
+                    ? 'bg-charcoal text-paper border-2 border-paper ring-2 ring-paper/20 scale-105'
+                    : 'bg-obsidian text-muted border-2 border-rule hover:border-rule-strong'
                 }`}
               >
-                {status === 'done' && <Check className="w-2 h-2 stroke-[3]" />}
+                {status === 'done' ? (
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                ) : (
+                  <span>{act.numStr}</span>
+                )}
               </button>
             );
           })}
