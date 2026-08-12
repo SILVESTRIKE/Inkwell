@@ -50,27 +50,24 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
     <article className="group relative transition-all duration-300">
       <Link
         href={`/projects/${project._id}`}
-        className="block bg-charcoal hover:bg-obsidian border border-rule border-l-4 border-l-oxide/60 hover:border-l-oxide rounded-sm p-5 sm:p-7 shadow-card hover:shadow-card-hover transition-all duration-base transform hover:-translate-y-0.5 hover:translate-x-1.5 cursor-pointer"
+        className="block bg-charcoal hover:bg-obsidian border border-rule border-l-4 border-l-oxide/70 hover:border-l-oxide rounded-sm p-6 sm:p-7 shadow-card hover:shadow-card-hover transition-all duration-base transform hover:-translate-y-0.5 hover:translate-x-1.5 cursor-pointer space-y-6"
         style={{ animationDelay: `${index * 80}ms` }}
       >
-        {/* Top Spine Row: Title, Metadata, State & Ratio */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-rule/60 pb-4">
-          <div className="space-y-1.5 min-w-0 flex-1">
-            <div className="flex items-center space-x-3">
-              <span className="w-2 h-2 rounded-full bg-oxide/80 group-hover:bg-oxide shrink-0" />
-              <h3 className="font-display font-bold text-xl sm:text-2xl text-paper group-hover:text-oxide transition-colors duration-fast truncate tracking-tight">
-                {project.title}
-              </h3>
-            </div>
+        {/* 1. Header: Title, Quote Excerpt & Metadata */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="min-w-0 flex-1 space-y-1">
+            <h3 className="font-display font-bold text-xl sm:text-2xl text-paper group-hover:text-oxide transition-colors duration-fast truncate tracking-tight">
+              {project.title}
+            </h3>
             {excerpt && (
-              <p className="text-xs font-body text-paper/70 line-clamp-1 italic pl-5 leading-relaxed">
+              <p className="text-xs font-body text-paper/60 line-clamp-1 italic leading-relaxed">
                 "{excerpt}"
               </p>
             )}
           </div>
 
-          <div className="flex items-center space-x-4 shrink-0 font-mono text-xs">
-            <span className="flex items-center space-x-1.5 text-muted text-[11px]">
+          <div className="flex items-center space-x-3 shrink-0 font-mono text-xs">
+            <span className="text-muted text-[11px] flex items-center space-x-1.5">
               <Clock className="w-3.5 h-3.5 text-oxide" />
               <span>{new Date(project.createdAt).toLocaleDateString()}</span>
             </span>
@@ -89,10 +86,10 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
           </div>
         </div>
 
-        {/* Middle Section: 5-Stage Ink Progression Bar */}
-        <div className="py-5 space-y-3 font-ui">
-          {/* Stage Labels Grid */}
-          <div className="grid grid-cols-5 gap-2 sm:gap-4 text-center">
+        {/* 2. 5-Stage Ink Progression Track */}
+        <div className="space-y-3 font-ui">
+          {/* Stage Labels & Node Symbols */}
+          <div className="grid grid-cols-5 gap-2 text-center">
             {STAGES.map((stage, idx) => {
               const stepNum = idx + 1;
               const state = stepStates.find(s => s.stepNumber === stepNum);
@@ -102,7 +99,7 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
               const isCurrent = status === 'running' || (stepNum === completedCount + 1 && completedCount < 5 && isUnlocked);
 
               return (
-                <div key={stage.num} className="flex flex-col items-center space-y-1.5">
+                <div key={stage.num} className="flex flex-col items-center space-y-2">
                   <span
                     className={`text-[10px] sm:text-xs font-mono font-semibold tracking-wider transition-colors ${
                       isCompleted
@@ -145,7 +142,7 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
           </div>
 
           {/* Continuous Ink Fill Bar */}
-          <div className="relative w-full h-1.5 bg-obsidian border border-rule rounded-full overflow-hidden">
+          <div className="relative w-full h-1 bg-obsidian border border-rule/60 rounded-full overflow-hidden">
             <div
               className={`h-full transition-all duration-700 rounded-full ${
                 lifecycleState === 'DONE'
@@ -159,19 +156,11 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
           </div>
         </div>
 
-        {/* Bottom Spine Footer: Action CTA */}
-        <div className="pt-2 flex items-center justify-between font-ui border-t border-rule/40">
-          <span className="text-[11px] font-mono text-muted group-hover:text-paper transition-colors truncate max-w-md">
-            {lifecycleState === 'DONE'
-              ? 'Complete 5-Act storybook manuscript & illustrations'
-              : isRunning
-              ? 'Gemini pipeline active on server...'
-              : `Next Act: 0${Math.min(5, completedCount + 1)} ${STAGES[Math.min(4, completedCount)].name}`}
-          </span>
-
-          <div className="flex items-center space-x-1 text-xs font-semibold uppercase tracking-wider text-oxide group-hover:text-oxide-hover transition-colors shrink-0">
+        {/* 3. Bottom Footer: Primary Action CTA */}
+        <div className="flex items-center justify-end pt-1">
+          <div className="flex items-center space-x-1.5 text-xs font-semibold uppercase tracking-wider text-oxide group-hover:text-oxide-hover transition-colors">
             <span>{ctaText}</span>
-            <ArrowRight className="w-4 h-4 ml-1 transform group-hover:translate-x-1.5 transition-transform duration-fast" />
+            <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform duration-fast" />
           </div>
         </div>
       </Link>
