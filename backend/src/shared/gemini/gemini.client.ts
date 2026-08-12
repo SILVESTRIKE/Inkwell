@@ -106,7 +106,10 @@ export class GeminiClient {
   async generateText(options: GeminiTextOptions): Promise<string> {
     this.lastQuotaNotice = null;
     if (this.apiKeys.length === 0) {
-      return this.getMockTextResponse(options.prompt);
+      if (process.env.ENABLE_MOCK_FALLBACK === 'true') {
+        return this.getMockTextResponse(options.prompt);
+      }
+      throw new Error('Gemini API key is missing. Please set GEMINI_API_KEY or GEMINI_API_KEYS in your .env file.');
     }
 
     const maxAttempts = Math.max(1, this.apiKeys.length);
@@ -175,6 +178,11 @@ export class GeminiClient {
       }
     }
 
+    if (process.env.ENABLE_MOCK_FALLBACK === 'true') {
+      logger.warn(`[GeminiClient] Text API failed and ENABLE_MOCK_FALLBACK=true. Returning mock text response.`);
+      return this.getMockTextResponse(options.prompt);
+    }
+
     throw lastError || new Error('All Gemini API keys exhausted without success.');
   }
 
@@ -182,7 +190,10 @@ export class GeminiClient {
   async generateImage(options: GeminiImageOptions): Promise<Buffer> {
     this.lastQuotaNotice = null;
     if (this.apiKeys.length === 0) {
-      return this.getMockImageBuffer();
+      if (process.env.ENABLE_MOCK_FALLBACK === 'true') {
+        return this.getMockImageBuffer();
+      }
+      throw new Error('Gemini API key is missing. Please set GEMINI_API_KEY or GEMINI_API_KEYS in your .env file.');
     }
 
     let fullPrompt = options.artStyle
@@ -264,9 +275,8 @@ export class GeminiClient {
       }
     }
 
-    // In NODE_ENV=development, if all API keys hit 429 rate limit or quota ceiling, return mock image buffer so full pipeline flow testing can complete without stalling
-    if (process.env.NODE_ENV === 'development' || process.env.ENABLE_MOCK_FALLBACK === 'true') {
-      logger.warn(`[GeminiClient] Image API 429 rate-limited in development environment. Using mock image buffer to allow full 5-act pipeline flow testing.`);
+    if (process.env.ENABLE_MOCK_FALLBACK === 'true') {
+      logger.warn(`[GeminiClient] Image API failed and ENABLE_MOCK_FALLBACK=true. Using mock image buffer.`);
       return this.getMockImageBuffer();
     }
 
