@@ -5,6 +5,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { User } from '../auth/user.model';
 import { Project } from '../projects/project.model';
 import { GeminiClient } from '../../shared/gemini/gemini.client';
+import { env } from '../../shared/config/env';
 
 describe('PipelineService', { timeout: 15000 }, () => {
   let pipelineService: PipelineService;
@@ -17,7 +18,7 @@ describe('PipelineService', { timeout: 15000 }, () => {
     delete process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_API_KEYS;
 
-    const mongoUri = process.env.MONGO_URI_TEST || 'mongodb://localhost:27017/inkwell_isolated_test';
+    const mongoUri = env.MONGO_URI_TEST;
     try {
       if (mongoose.connection.readyState !== 0) {
         await mongoose.disconnect();

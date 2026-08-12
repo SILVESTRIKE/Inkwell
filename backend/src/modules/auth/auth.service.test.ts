@@ -2,12 +2,13 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import mongoose from 'mongoose';
 import { AuthService } from './auth.service';
 import { User } from './user.model';
+import { env } from '../../shared/config/env';
 
 describe('AuthService', () => {
   let authService: AuthService;
 
   beforeAll(async () => {
-    const mongoUri = process.env.MONGO_URI_TEST || 'mongodb://localhost:27017/inkwell_isolated_test';
+    const mongoUri = env.MONGO_URI_TEST;
     try {
       if (mongoose.connection.readyState !== 0) {
         await mongoose.disconnect();
