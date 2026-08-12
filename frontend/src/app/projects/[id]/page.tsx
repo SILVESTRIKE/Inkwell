@@ -147,35 +147,35 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="h-[calc(100vh-56px)] flex flex-col overflow-hidden bg-obsidian text-paper font-ui">
-      {/* Top Studio Header (Height-Locked: 52px) */}
-      <header className="h-13 bg-charcoal border-b border-rule px-4 sm:px-6 flex items-center justify-between shrink-0 select-none">
-        <div className="flex items-center space-x-3">
+      {/* Top Studio Header */}
+      <header className="py-3.5 px-6 sm:px-8 bg-obsidian border-b border-rule flex items-center justify-between shrink-0 select-none">
+        <div className="flex items-center space-x-3.5">
           <Link
             href="/projects"
-            className="p-1 text-muted hover:text-paper bg-obsidian hover:bg-sunken rounded-sm border border-rule transition duration-fast"
+            className="p-1.5 text-muted hover:text-paper bg-charcoal hover:bg-sunken rounded-sm border border-rule transition duration-fast"
             title="Back to Catalog"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
-          <div className="flex items-center space-x-2">
-            <h1 className="font-display font-bold text-lg text-paper truncate max-w-xs sm:max-w-md">
+          <div className="flex items-center space-x-3">
+            <h1 className="font-display font-bold text-lg text-paper truncate max-w-xs sm:max-w-md tracking-tight">
               {project.title}
             </h1>
-            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-xs bg-oxide-soft text-oxide border border-oxide/40">
+            <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-xs bg-oxide-soft text-oxide border border-oxide/40">
               {(project.overallStatus || 'draft').replace('_', ' ')}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3 text-xs">
-          <span className="hidden md:flex items-center space-x-1 text-faint text-[11px]">
-            <Clock className="w-3 h-3 text-oxide" />
+        <div className="flex items-center space-x-4 text-xs">
+          <span className="hidden md:flex items-center space-x-1.5 text-faint text-[11px]">
+            <Clock className="w-3.5 h-3.5 text-oxide" />
             <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
           </span>
 
           <button
             onClick={() => setIsBookDrawerOpen(true)}
-            className="flex items-center space-x-1.5 px-3 py-1.5 bg-obsidian hover:bg-charcoal text-paper border border-rule rounded-sm text-xs font-medium transition duration-fast cursor-pointer"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-charcoal hover:bg-sunken text-paper border border-rule rounded-sm text-xs font-medium transition duration-fast cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5 text-oxide" />
             <span>Read Manuscript</span>
