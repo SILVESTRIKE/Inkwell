@@ -50,19 +50,12 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
     <article className="group relative transition-all duration-300">
       <Link
         href={`/projects/${project._id}`}
-        className="block relative bg-charcoal hover:bg-obsidian border border-rule border-l-4 border-l-oxide/70 hover:border-l-oxide rounded-sm p-6 sm:p-7 shadow-card hover:shadow-card-hover transition-all duration-base transform hover:-translate-y-0.5 hover:translate-x-1.5 cursor-pointer overflow-hidden"
+        className="block bg-charcoal hover:bg-obsidian border border-rule border-l-4 border-l-oxide/80 hover:border-l-oxide rounded-sm shadow-card hover:shadow-card-hover transition-all duration-base transform hover:-translate-y-0.5 hover:translate-x-1.5 cursor-pointer overflow-hidden"
         style={{ animationDelay: `${index * 80}ms` }}
       >
-        {/* Background Ink Fill Bar across the ENTIRE Book Spine */}
-        <div
-          className="absolute bottom-0 left-0 top-0 bg-gradient-to-r from-oxide/30 via-oxide/25 to-oxide/35 group-hover:from-oxide/35 group-hover:to-oxide/40 border-r-2 border-oxide shadow-[inset_0_0_24px_rgba(217,107,74,0.2)] transition-all duration-700 pointer-events-none"
-          style={{ width: `${fillPercentage}%` }}
-        />
-
-        {/* Book Spine Contents */}
-        <div className="relative z-10 space-y-5">
-          {/* 1. Spine Header: Title, Quote & Lifecycle Status */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-5 sm:p-6 space-y-4">
+          {/* 1. Header: Title, Quote & Metadata */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-1">
               <h3 className="font-display font-bold text-xl sm:text-2xl text-paper group-hover:text-oxide transition-colors duration-fast truncate tracking-tight">
                 {project.title}
@@ -94,8 +87,8 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
             </div>
           </div>
 
-          {/* 2. 5-Act Progression: Minimal Symbols + Hover Reveal Labels */}
-          <div className="grid grid-cols-5 gap-2 text-center items-end pt-2 font-ui">
+          {/* 2. 5-Act Stepper Symbols & Hover Labels */}
+          <div className="grid grid-cols-5 gap-2 text-center items-end font-ui pt-1">
             {STAGES.map((stage, idx) => {
               const stepNum = idx + 1;
               const state = stepStates.find(s => s.stepNumber === stepNum);
@@ -105,7 +98,7 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
               const isCurrent = status === 'running' || (stepNum === completedCount + 1 && completedCount < 5 && isUnlocked);
 
               return (
-                <div key={stage.num} className="flex flex-col items-center space-y-1.5">
+                <div key={stage.num} className="flex flex-col items-center space-y-1">
                   {/* Step Label: Hidden by default, reveals on hover */}
                   <span
                     className={`text-[10px] font-mono font-semibold tracking-wider transition-all duration-300 opacity-0 group-hover:opacity-100 ${
@@ -122,7 +115,7 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
                   {/* Minimal Stage Symbol (✓, ●, o, 🔒) */}
                   <div className="h-5 flex items-center justify-center font-mono text-xs">
                     {isCompleted ? (
-                      <span className="text-oxide font-bold text-base">✓</span>
+                      <span className="text-oxide font-bold text-sm">✓</span>
                     ) : status === 'running' ? (
                       <span className="w-2 h-2 rounded-full bg-oxide animate-ping inline-block" />
                     ) : isCurrent ? (
@@ -139,12 +132,26 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
           </div>
 
           {/* 3. Footer CTA: Hidden by default, reveals on hover */}
-          <div className="flex items-center justify-end h-5 pt-1 font-ui">
+          <div className="flex items-center justify-end h-4 font-ui">
             <div className="flex items-center space-x-1.5 text-xs font-semibold uppercase tracking-wider text-oxide transition-all duration-300 opacity-0 group-hover:opacity-100">
               <span>{ctaText}</span>
               <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform duration-fast" />
             </div>
           </div>
+        </div>
+
+        {/* 4. Full-Width Edge-to-Edge Ink Load Progress Bar at the Bottom */}
+        <div className="w-full h-2 bg-obsidian border-t border-rule/60 overflow-hidden">
+          <div
+            className={`h-full transition-all duration-700 ${
+              lifecycleState === 'DONE'
+                ? 'bg-oxide'
+                : isRunning
+                ? 'bg-oxide animate-pulse'
+                : 'bg-oxide'
+            }`}
+            style={{ width: `${fillPercentage}%` }}
+          />
         </div>
       </Link>
     </article>
