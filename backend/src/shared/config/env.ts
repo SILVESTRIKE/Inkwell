@@ -6,20 +6,21 @@ dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config(); // fallback to current working directory .env
 
+// Enforce that ALL environment variables MUST be provided via .env (no hardcoded default fallbacks in code)
 const envSchema = z.object({
-  PORT: z.string().default('4000'),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  MONGO_URI: z.string().default('mongodb://localhost:27017/inkwell'),
-  MONGO_URI_TEST: z.string().default('mongodb://localhost:27017/inkwell_isolated_test'),
-  REDIS_URL: z.string().default('redis://localhost:6379'),
-  JWT_SECRET: z.string().min(1, 'JWT_SECRET environment variable must be provided in .env'),
-  JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET environment variable must be provided in .env'),
-  GEMINI_API_KEY: z.string().optional().default(''),
-  GEMINI_API_KEYS: z.string().optional().default(''),
-  STORAGE_DIR: z.string().default('./uploads'),
-  LOCK_TTL_SECONDS: z.coerce.number().default(60),
-  MAX_CHARACTERS: z.coerce.number().default(2),
-  MAX_CHAPTERS: z.coerce.number().default(1),
+  PORT: z.string().min(1, 'PORT must be provided in .env'),
+  NODE_ENV: z.enum(['development', 'production', 'test']),
+  MONGO_URI: z.string().min(1, 'MONGO_URI must be provided in .env'),
+  MONGO_URI_TEST: z.string().min(1, 'MONGO_URI_TEST must be provided in .env'),
+  REDIS_URL: z.string().min(1, 'REDIS_URL must be provided in .env'),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET must be provided in .env'),
+  JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET must be provided in .env'),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_API_KEYS: z.string().optional(),
+  STORAGE_DIR: z.string().min(1, 'STORAGE_DIR must be provided in .env'),
+  LOCK_TTL_SECONDS: z.coerce.number(),
+  MAX_CHARACTERS: z.coerce.number(),
+  MAX_CHAPTERS: z.coerce.number(),
 });
 
 const parsedEnv = envSchema.parse(process.env);
