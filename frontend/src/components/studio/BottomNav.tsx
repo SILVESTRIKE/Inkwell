@@ -43,8 +43,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     const nextStepNum = selectedStep + 1;
     if (nextStepNum === 2) return step1Done;
     if (nextStepNum === 3) return step2Done;
-    if (nextStepNum === 4) return step1Done && step2Done;
-    if (nextStepNum === 5) return step3Done && step4Done;
+    if (nextStepNum === 4) return step3Done;
+    if (nextStepNum === 5) return step4Done;
     return false;
   };
 

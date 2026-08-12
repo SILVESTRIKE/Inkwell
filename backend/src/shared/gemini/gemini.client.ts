@@ -264,6 +264,12 @@ export class GeminiClient {
       }
     }
 
+    // In NODE_ENV=development, if all API keys hit 429 rate limit or quota ceiling, return mock image buffer so full pipeline flow testing can complete without stalling
+    if (process.env.NODE_ENV === 'development' || process.env.ENABLE_MOCK_FALLBACK === 'true') {
+      logger.warn(`[GeminiClient] Image API 429 rate-limited in development environment. Using mock image buffer to allow full 5-act pipeline flow testing.`);
+      return this.getMockImageBuffer();
+    }
+
     throw lastError || new Error('All Gemini image API keys exhausted without success.');
   }
 

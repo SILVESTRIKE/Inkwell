@@ -54,12 +54,12 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   } else if (selectedStep === 3 && !step2Done) {
     canRun = false;
     prereqMsg = 'Requires Act 02 (Characters) to be completed first.';
-  } else if (selectedStep === 4 && (!step1Done || !step2Done)) {
+  } else if (selectedStep === 4 && !step3Done) {
     canRun = false;
-    prereqMsg = 'Requires Act 01 (Style) and Act 02 (Characters) to be completed.';
-  } else if (selectedStep === 5 && (!step3Done || !step4Done)) {
+    prereqMsg = 'Requires Act 03 (Portraits) to be completed first.';
+  } else if (selectedStep === 5 && !step4Done) {
     canRun = false;
-    prereqMsg = 'Requires both Act 03 (Portraits) and Act 04 (Chapters) to be completed.';
+    prereqMsg = 'Requires Act 04 (Chapters) to be completed first.';
   }
 
   const isRunningThisStep = runningStep === selectedStep;
