@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ProjectData } from '@/lib/api-client';
-import { Clock, ArrowRight, Check, Lock } from 'lucide-react';
+import { Clock, ArrowRight, Lock } from 'lucide-react';
 import { isStepUnlocked } from '@/lib/step-utils';
 
 interface BookSpineRowProps {
@@ -50,10 +50,10 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
     <article className="group relative transition-all duration-300">
       <Link
         href={`/projects/${project._id}`}
-        className="block bg-charcoal hover:bg-obsidian border border-rule border-l-4 border-l-oxide/70 hover:border-l-oxide rounded-sm p-6 sm:p-7 shadow-card hover:shadow-card-hover transition-all duration-base transform hover:-translate-y-0.5 hover:translate-x-1.5 cursor-pointer space-y-6"
+        className="block bg-charcoal hover:bg-obsidian border border-rule border-l-4 border-l-oxide/70 hover:border-l-oxide rounded-sm p-6 sm:p-7 shadow-card hover:shadow-card-hover transition-all duration-base transform hover:-translate-y-0.5 hover:translate-x-1.5 cursor-pointer space-y-5"
         style={{ animationDelay: `${index * 80}ms` }}
       >
-        {/* 1. Header: Title, Quote Excerpt & Metadata */}
+        {/* 1. Spine Header: Title, Quote & Lifecycle Status */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="min-w-0 flex-1 space-y-1">
             <h3 className="font-display font-bold text-xl sm:text-2xl text-paper group-hover:text-oxide transition-colors duration-fast truncate tracking-tight">
@@ -86,10 +86,10 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
           </div>
         </div>
 
-        {/* 2. 5-Stage Ink Progression Track */}
-        <div className="space-y-3 font-ui">
-          {/* Stage Labels & Node Symbols */}
-          <div className="grid grid-cols-5 gap-2 text-center">
+        {/* 2. 5-Act Progression: Minimal Symbols + Hover Reveal Labels + Ink Progress Fill Bar */}
+        <div className="space-y-3 font-ui pt-1">
+          {/* Symbols Grid (Minimalist Symbols + Hover Reveal Text) */}
+          <div className="grid grid-cols-5 gap-2 text-center items-end">
             {STAGES.map((stage, idx) => {
               const stepNum = idx + 1;
               const state = stepStates.find(s => s.stepNumber === stepNum);
@@ -99,9 +99,10 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
               const isCurrent = status === 'running' || (stepNum === completedCount + 1 && completedCount < 5 && isUnlocked);
 
               return (
-                <div key={stage.num} className="flex flex-col items-center space-y-2">
+                <div key={stage.num} className="flex flex-col items-center space-y-1.5">
+                  {/* Step Label: Hidden by default, Reveals on Hover */}
                   <span
-                    className={`text-[10px] sm:text-xs font-mono font-semibold tracking-wider transition-colors ${
+                    className={`text-[10px] font-mono font-semibold tracking-wider transition-all duration-300 opacity-0 group-hover:opacity-100 ${
                       isCompleted
                         ? 'text-paper font-bold'
                         : isCurrent
@@ -112,28 +113,18 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
                     {stage.num} <span className="hidden sm:inline">— {stage.name}</span>
                   </span>
 
-                  {/* Node State Symbol */}
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
-                      isCompleted
-                        ? 'bg-oxide text-paper border border-oxide shadow-xs'
-                        : status === 'failed'
-                        ? 'bg-charcoal text-error border border-error'
-                        : status === 'running'
-                        ? 'bg-charcoal text-oxide border border-oxide animate-pulse'
-                        : isCurrent
-                        ? 'bg-charcoal text-paper border border-paper/60 ring-2 ring-paper/20'
-                        : 'bg-obsidian text-faint border border-rule'
-                    }`}
-                  >
+                  {/* Minimal Stage Symbol (✓, ●, o, 🔒) */}
+                  <div className="h-5 flex items-center justify-center font-mono text-xs">
                     {isCompleted ? (
-                      <Check className="w-3 h-3 stroke-[3]" />
+                      <span className="text-oxide font-bold text-sm">✓</span>
                     ) : status === 'running' ? (
-                      <span className="w-1.5 h-1.5 rounded-full bg-oxide animate-ping" />
+                      <span className="w-2 h-2 rounded-full bg-oxide animate-ping inline-block" />
+                    ) : isCurrent ? (
+                      <span className="w-2 h-2 rounded-full bg-paper inline-block" />
                     ) : !isUnlocked ? (
-                      <Lock className="w-2.5 h-2.5 text-faint stroke-[2]" />
+                      <Lock className="w-3 h-3 text-faint stroke-[1.5]" />
                     ) : (
-                      <span>○</span>
+                      <span className="text-faint text-xs">o</span>
                     )}
                   </div>
                 </div>
@@ -141,24 +132,24 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
             })}
           </div>
 
-          {/* Continuous Ink Fill Bar */}
-          <div className="relative w-full h-1 bg-obsidian border border-rule/60 rounded-full overflow-hidden">
+          {/* Continuous Ink Fill Loading Bar */}
+          <div className="relative w-full h-2 bg-obsidian border border-rule/60 rounded-xs overflow-hidden">
             <div
-              className={`h-full transition-all duration-700 rounded-full ${
+              className={`h-full transition-all duration-700 rounded-xs ${
                 lifecycleState === 'DONE'
                   ? 'bg-oxide'
                   : isRunning
                   ? 'bg-oxide animate-pulse'
-                  : 'bg-oxide/80'
+                  : 'bg-oxide'
               }`}
               style={{ width: `${fillPercentage}%` }}
             />
           </div>
         </div>
 
-        {/* 3. Bottom Footer: Primary Action CTA */}
-        <div className="flex items-center justify-end pt-1">
-          <div className="flex items-center space-x-1.5 text-xs font-semibold uppercase tracking-wider text-oxide group-hover:text-oxide-hover transition-colors">
+        {/* 3. Footer CTA: Hidden by default, Reveals on Hover */}
+        <div className="flex items-center justify-end h-5">
+          <div className="flex items-center space-x-1.5 text-xs font-semibold uppercase tracking-wider text-oxide transition-all duration-300 opacity-0 group-hover:opacity-100">
             <span>{ctaText}</span>
             <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform duration-fast" />
           </div>
