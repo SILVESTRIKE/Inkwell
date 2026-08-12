@@ -79,7 +79,7 @@ export default function NewProjectPage() {
   if (!user) return <AuthModal />;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 font-ui">
+    <div className="max-w-2xl mx-auto w-full px-4 py-8 sm:px-8 sm:py-12 space-y-8 font-ui">
       <div className="flex items-center space-x-3 border-b border-rule pb-6">
         <Link
           href="/projects"
