@@ -71,4 +71,15 @@ export class ProjectsService {
     const checksum = crypto.createHash('sha256').update(bookText.trim()).digest('hex');
     return await Project.findOne({ userId, bookChecksum: checksum, isDeleted: { $ne: true } });
   }
+
+  async deleteProject(userId: string, projectId: string): Promise<IProject> {
+    const project = await Project.findOne({ _id: projectId, userId, isDeleted: { $ne: true } });
+    if (!project) {
+      throw new NotFoundError('Project not found');
+    }
+    project.isDeleted = true;
+    await project.save();
+    return project;
+  }
 }
+

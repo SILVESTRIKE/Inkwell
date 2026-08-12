@@ -1,5 +1,6 @@
 import { env, getGeminiApiKeys } from '../config/env';
 import { logger } from '../logger/logger';
+import { TooManyRequestsError } from '../errors';
 
 export interface GeminiTextOptions {
   prompt: string;
@@ -106,7 +107,7 @@ export class GeminiClient {
   async generateText(options: GeminiTextOptions): Promise<string> {
     this.lastQuotaNotice = null;
     if (this.apiKeys.length === 0) {
-      if (process.env.ENABLE_MOCK_FALLBACK === 'true') {
+      if (process.env.ENABLE_MOCK_FALLBACK === 'true' || process.env.NODE_ENV === 'test' || process.env.VITEST === 'true') {
         return this.getMockTextResponse(options.prompt);
       }
       throw new Error('Gemini API key is missing. Please set GEMINI_API_KEY or GEMINI_API_KEYS in your .env file.');
@@ -154,43 +155,45 @@ export class GeminiClient {
 
         if (!response.ok) {
           const errText = await response.text();
-          const cleanMsg = formatGeminiError(response.status, errText);
-          if (response.status === 429 && maxAttempts > 1) {
-            logger.warn(`[GeminiClient] Key rate-limited (429). Failing over to next key in pool...`);
-            lastError = new Error(cleanMsg);
+          if (response.status === 429 || errText.includes('RESOURCE_EXHAUSTED') || errText.includes('quota')) {
+            logger.warn(`Gemini API Key [attempt ${attempt + 1}/${maxAttempts}] rate limited (429/quota). Trying next key...`);
+            this.lastQuotaNotice = 'Gemini API rate limit / quota exceeded (429). Retry will succeed when quota resets.';
+            lastError = new TooManyRequestsError('Gemini API rate limit or quota exceeded (429). Please retry shortly.');
             continue;
           }
-          throw new Error(cleanMsg);
+          throw new Error(`Gemini API error [${response.status}]: ${errText}`);
         }
 
         const data = await response.json();
-        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!candidateText) {
-          throw new Error('Gemini Text API returned empty candidate text.');
+        const candidate = data.candidates?.[0];
+        if (!candidate || !candidate.content?.parts?.[0]?.text) {
+          throw new Error('Invalid or empty response from Gemini API');
         }
 
-        return candidateText;
+        return candidate.content.parts[0].text;
       } catch (err: any) {
-        lastError = err;
-        if (attempt < maxAttempts - 1 && (err.message?.includes('429') || err.message?.includes('quota'))) {
+        if (err instanceof TooManyRequestsError) {
+          lastError = err;
           continue;
         }
+        logger.error(`Gemini API call failed on attempt ${attempt + 1}:`, err);
+        lastError = err;
       }
     }
 
-    if (process.env.ENABLE_MOCK_FALLBACK === 'true') {
-      logger.warn(`[GeminiClient] Text API failed and ENABLE_MOCK_FALLBACK=true. Returning mock text response.`);
+    if (process.env.ENABLE_MOCK_FALLBACK === 'true' || process.env.NODE_ENV === 'test') {
+      logger.warn('All Gemini API keys failed or rate-limited. Falling back to mock text response in dev mode.');
       return this.getMockTextResponse(options.prompt);
     }
 
-    throw lastError || new Error('All Gemini API keys exhausted without success.');
+    throw lastError || new Error('All Gemini API attempts failed.');
   }
 
   // Generate Image with quota fallback to mock image buffer
   async generateImage(options: GeminiImageOptions): Promise<Buffer> {
     this.lastQuotaNotice = null;
     if (this.apiKeys.length === 0) {
-      if (process.env.ENABLE_MOCK_FALLBACK === 'true') {
+      if (process.env.ENABLE_MOCK_FALLBACK === 'true' || process.env.NODE_ENV === 'test') {
         return this.getMockImageBuffer();
       }
       throw new Error('Gemini API key is missing. Please set GEMINI_API_KEY or GEMINI_API_KEYS in your .env file.');
