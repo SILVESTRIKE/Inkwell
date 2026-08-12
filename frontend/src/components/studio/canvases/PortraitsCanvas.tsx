@@ -45,7 +45,7 @@ export const PortraitsCanvas: React.FC<PortraitsCanvasProps> = ({ project, onRun
   }
 
   return (
-    <div className="space-y-6 font-ui max-w-5xl mx-auto p-4 sm:p-6">
+    <div className="space-y-6 font-ui max-w-5xl mx-auto p-4 sm:p-6 animate-in fade-in-50 duration-300">
       {/* Header Bar */}
       <div className="flex items-center justify-between border-b border-rule pb-4">
         <div>
@@ -71,8 +71,8 @@ export const PortraitsCanvas: React.FC<PortraitsCanvasProps> = ({ project, onRun
               key={char.id}
               className="bg-charcoal border border-rule rounded-md overflow-hidden shadow-card hover:shadow-card-hover transition duration-base flex flex-col"
             >
-              {/* Large Portrait Image Frame (Aspect 3/4) */}
-              <div className="w-full aspect-[3/4] bg-obsidian relative overflow-hidden border-b border-rule flex items-center justify-center">
+              {/* Controlled Portrait Image Frame */}
+              <div className="w-full h-52 sm:h-60 bg-obsidian relative overflow-hidden border-b border-rule flex items-center justify-center shrink-0">
                 {mediaUrl && !hasError ? (
                   <img
                     src={mediaUrl}
@@ -81,9 +81,9 @@ export const PortraitsCanvas: React.FC<PortraitsCanvasProps> = ({ project, onRun
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   />
                 ) : (
-                  <div className="p-8 text-center flex flex-col items-center justify-center space-y-3 text-muted">
-                    <div className="w-12 h-12 rounded-full bg-sunken border border-rule flex items-center justify-center text-faint">
-                      <ImageIcon className="w-6 h-6 stroke-[1.2]" />
+                  <div className="p-6 text-center flex flex-col items-center justify-center space-y-2 text-muted">
+                    <div className="w-10 h-10 rounded-full bg-sunken border border-rule flex items-center justify-center text-faint">
+                      <ImageIcon className="w-5 h-5 stroke-[1.2]" />
                     </div>
                     <div>
                       <span className="text-xs uppercase tracking-wider font-semibold block text-paper">
@@ -99,17 +99,21 @@ export const PortraitsCanvas: React.FC<PortraitsCanvasProps> = ({ project, onRun
                 )}
               </div>
 
-              {/* Character Details Footer */}
-              <div className="p-5 space-y-2 flex-1 flex flex-col justify-between">
-                <div>
-                  <h4 className="font-display font-bold text-xl text-paper">{char.name}</h4>
-                  <p className="text-xs font-body text-paper/85 leading-relaxed mt-1">{char.description}</p>
+              {/* Character Details & Full Prompt Body */}
+              <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                <div className="space-y-1.5">
+                  <div className="flex items-baseline justify-between">
+                    <h4 className="font-display font-bold text-xl text-paper">{char.name}</h4>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-oxide font-ui">Adult Main Character</span>
+                  </div>
+                  <p className="text-xs font-body text-paper/90 leading-relaxed">{char.description}</p>
                 </div>
-                <div className="pt-3 border-t border-rule text-[11px] font-mono text-muted">
-                  <span className="label-sm text-[9px] block mb-1">Image Prompt</span>
-                  <p className="line-clamp-2 leading-relaxed bg-obsidian p-2 rounded-xs border border-rule text-[10px]">
+
+                <div className="pt-3 border-t border-rule font-mono text-xs space-y-1.5">
+                  <span className="label-sm text-[9px] block text-muted">Generated Image Prompt</span>
+                  <div className="bg-obsidian p-3 rounded-xs border border-rule text-[11px] text-paper/90 leading-relaxed select-text">
                     {char.imagePrompt}
-                  </p>
+                  </div>
                 </div>
               </div>
             </div>

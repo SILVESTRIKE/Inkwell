@@ -209,9 +209,9 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         )}
       </div>
 
-      {/* Style Summary Card */}
+      {/* Style Summary Card - Pinned to bottom across all steps once defined */}
       {project.outputs?.style?.styleName && (
-        <div className="bg-obsidian p-3.5 rounded-sm border border-rule space-y-1.5 shrink-0">
+        <div className="bg-obsidian p-3.5 rounded-sm border border-rule space-y-1.5 shrink-0 mt-auto shadow-card">
           <div className="flex items-center space-x-1.5 text-oxide">
             <Palette className="w-3.5 h-3.5" />
             <span className="label-sm text-[10px]">Defined Art Style</span>
@@ -219,7 +219,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           <h5 className="font-display font-bold text-xs text-paper">
             {project.outputs.style.styleName}
           </h5>
-          <p className="text-[11px] font-body text-muted line-clamp-2 leading-relaxed">
+          <p className="text-[11px] font-body text-muted line-clamp-3 leading-relaxed">
             {project.outputs.style.description}
           </p>
         </div>
