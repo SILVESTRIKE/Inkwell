@@ -35,8 +35,8 @@ export class AuthService {
     }
 
     const payload = { id: user._id.toString(), email: user.email, name: user.name };
-    const accessToken = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    const accessToken = jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN as any });
+    const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRES_IN as any });
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     return {
@@ -57,8 +57,8 @@ export class AuthService {
       const payload = jwt.verify(token, env.JWT_REFRESH_SECRET) as { id: string; email: string; name: string };
       const userPayload = { id: payload.id, email: payload.email, name: payload.name };
 
-      const newAccessToken = jwt.sign(userPayload, env.JWT_SECRET, { expiresIn: '15m' });
-      const newRefreshToken = jwt.sign(userPayload, env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+      const newAccessToken = jwt.sign(userPayload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN as any });
+      const newRefreshToken = jwt.sign(userPayload, env.JWT_REFRESH_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRES_IN as any });
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
       return {
