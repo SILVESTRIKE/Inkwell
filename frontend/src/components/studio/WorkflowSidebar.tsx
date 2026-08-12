@@ -131,8 +131,8 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
                     <span className="w-2 h-2 rounded-xs bg-oxide animate-pulse block" />
                   )}
                   {status === 'failed' && <AlertCircle className="w-3.5 h-3.5 text-error" />}
-                  {status === 'pending' && unlocked && <span className="w-1.5 h-1.5 rounded-full bg-faint block" />}
-                  {!unlocked && <Lock className="w-3 h-3 text-faint" />}
+                  {status === 'pending' && isUnlocked && <span className="w-1.5 h-1.5 rounded-full bg-faint block" />}
+                  {!isUnlocked && <Lock className="w-3 h-3 text-faint" />}
                 </div>
               </div>
 
