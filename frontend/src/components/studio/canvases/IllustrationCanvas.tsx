@@ -33,13 +33,6 @@ export const IllustrationCanvas: React.FC<IllustrationCanvasProps> = ({ project,
             Act 05 generates the full-frame chapter illustration using Step 3's character portraits to maintain visual consistency.
           </p>
         </div>
-        <button
-          onClick={() => onRunStep(5)}
-          className="px-6 py-2.5 bg-oxide hover:bg-oxide-hover text-paper text-xs font-semibold uppercase tracking-wider rounded-sm shadow-card transition duration-fast cursor-pointer flex items-center space-x-2"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Generate Illustration</span>
-        </button>
       </div>
     );
   }

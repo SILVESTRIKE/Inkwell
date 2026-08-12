@@ -25,13 +25,6 @@ export const CharactersCanvas: React.FC<CharactersCanvasProps> = ({ project, onR
             Act 02 extracts up to 2 adult main characters from your manuscript and formulates tailored image prompts.
           </p>
         </div>
-        <button
-          onClick={() => onRunStep(2)}
-          className="px-6 py-2.5 bg-oxide hover:bg-oxide-hover text-paper text-xs font-semibold uppercase tracking-wider rounded-sm shadow-card transition duration-fast cursor-pointer flex items-center space-x-2"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Discover Characters</span>
-        </button>
       </div>
     );
   }

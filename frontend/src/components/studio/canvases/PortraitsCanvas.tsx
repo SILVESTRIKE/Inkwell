@@ -33,13 +33,6 @@ export const PortraitsCanvas: React.FC<PortraitsCanvasProps> = ({ project, onRun
             Act 03 renders high-resolution visual portraits for extracted characters using Gemini image generation.
           </p>
         </div>
-        <button
-          onClick={() => onRunStep(3)}
-          className="px-6 py-2.5 bg-oxide hover:bg-oxide-hover text-paper text-xs font-semibold uppercase tracking-wider rounded-sm shadow-card transition duration-fast cursor-pointer flex items-center space-x-2"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Generate Portraits</span>
-        </button>
       </div>
     );
   }
