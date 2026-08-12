@@ -26,13 +26,6 @@ export const ChapterCanvas: React.FC<ChapterCanvasProps> = ({ project, onRunStep
             Act 04 formulates key chapter scene illustration prompts and narrative summaries.
           </p>
         </div>
-        <button
-          onClick={() => onRunStep(4)}
-          className="px-6 py-2.5 bg-oxide hover:bg-oxide-hover text-paper text-xs font-semibold uppercase tracking-wider rounded-sm shadow-card transition duration-fast cursor-pointer flex items-center space-x-2"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Analyze Chapter Scenes</span>
-        </button>
       </div>
     );
   }

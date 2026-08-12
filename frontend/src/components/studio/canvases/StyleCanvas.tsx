@@ -24,13 +24,6 @@ export const StyleCanvas: React.FC<StyleCanvasProps> = ({ project, onRunStep }) 
             Act 01 analyzes your manuscript's genre and narrative tone to derive an aesthetic storybook art direction.
           </p>
         </div>
-        <button
-          onClick={() => onRunStep(1)}
-          className="px-6 py-2.5 bg-oxide hover:bg-oxide-hover text-paper text-xs font-semibold uppercase tracking-wider rounded-sm shadow-card transition duration-fast cursor-pointer flex items-center space-x-2"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Generate Art Style</span>
-        </button>
       </div>
     );
   }
