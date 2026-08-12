@@ -1,8 +1,6 @@
 import { IProject, ICharacterOutput } from '../../projects/project.model';
 import { GeminiClient } from '../../../shared/gemini/gemini.client';
 import { saveProjectFile } from '../../../shared/storage/file.storage';
-import { BadRequestError } from '../../../shared/errors';
-
 import { runCharactersStep } from './characters.step';
 
 export async function runPortraitsStep(
@@ -18,10 +16,11 @@ export async function runPortraitsStep(
   }
 
   const artStyle = project.outputs.style?.styleName || 'Classic Storybook';
-  const updatedCharacters: ICharacterOutput[] = [];
 
-  for (const char of characters) {
+  for (let i = 0; i < characters.length; i++) {
+    const char = characters[i];
     const filename = `portrait_${char.id}.jpg`;
+    
     const imageBuffer = await geminiClient.generateImage({
       prompt: char.imagePrompt,
       artStyle,
@@ -29,11 +28,12 @@ export async function runPortraitsStep(
 
     const savedPath = await saveProjectFile(project._id.toString(), filename, imageBuffer);
 
-    updatedCharacters.push({
-      ...char,
-      portraitFilename: savedPath,
-    });
+    // Update character portrait filename and save incrementally to MongoDB
+    characters[i].portraitFilename = savedPath;
+    project.outputs.characters = characters;
+    project.markModified('outputs.characters');
+    await project.save();
   }
 
-  return updatedCharacters;
+  return project.outputs.characters || [];
 }

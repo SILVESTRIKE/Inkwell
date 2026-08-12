@@ -31,7 +31,8 @@ describe('AuthService', () => {
     expect(result.user).toBeDefined();
     expect(result.user.email).toBe('newuser@example.com');
     expect(result.user.name).toBe('New User');
-    expect(result.token).toBeDefined();
+    expect(result.accessToken).toBeDefined();
+    expect(result.refreshToken).toBeDefined();
   });
 
   it('should return existing user when email already exists', async () => {
@@ -41,6 +42,15 @@ describe('AuthService', () => {
     expect(result.user.email).toBe('existing@example.com');
     const userCount = await User.countDocuments({ email: 'existing@example.com' });
     expect(userCount).toBe(1);
+  });
+
+  it('should refresh access token given a valid refresh token', async () => {
+    const initialSession = await authService.findOrCreateUser('refresh@example.com', 'Refresh User');
+    const refreshed = await authService.refreshAccessToken(initialSession.refreshToken);
+
+    expect(refreshed.accessToken).toBeDefined();
+    expect(refreshed.refreshToken).toBeDefined();
+    expect(refreshed.expiresAt).toBeDefined();
   });
 
   it('should throw BadRequestError when email is invalid', async () => {

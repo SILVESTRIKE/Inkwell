@@ -1,10 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* High-Contrast Dark Theme ("Nocturnal Editorial / Dark Academia") */
+  --color-bg: #121110;           /* Obsidian dark background */
+  --color-bg-raised: #1E1C18;    /* Charcoal surface/card background */
+  --color-bg-sunken: #161412;    /* Inset/code background */
+  --color-text: #F2EBE0;         /* High-contrast paper text (contrast 13.5:1 against #121110) */
+  --color-text-muted: #C4BBB0;   /* Readable secondary text (contrast 6.2:1 against #1E1C18) */
+  --color-text-faint: #999084;   /* Readable metadata (contrast 4.5:1) */
+  --color-accent: #D96B4A;        /* Bright Oxide Rust (contrast 5.1:1 on dark) */
+  --color-accent-hover: #E57958;
+  --color-accent-soft: rgba(217, 107, 74, 0.15);
+  --color-border: #3D3730;        /* Subtle border rule */
+  --color-border-strong: #5E554B;
+  --color-success: #81B28F;      /* High-contrast muted green */
+  --color-error: #E56B55;
+  --color-error-bg: rgba(229, 107, 85, 0.15);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.6);
+
+  /* Typography */
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Source Serif 4", Georgia, serif;
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Radii */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --easing-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+[data-theme="light"] {
+  /* High-Contrast Light Theme ("Literary / Analog Editorial") */
+  --color-bg: #F7F3EC;           /* Warm paper background */
+  --color-bg-raised: #ECE5D8;    /* Surface card background */
+  --color-bg-sunken: #E2D9CA;    /* Inset/input background */
+  --color-text: #1A1614;         /* High-contrast warm ink (contrast 14.5:1 against #F7F3EC) */
+  --color-text-muted: #4E463E;   /* Secondary text (contrast 7.1:1 against #ECE5D8) */
+  --color-text-faint: #786D62;   /* Metadata text (contrast 4.5:1) */
+  --color-accent: #B84A28;        /* Rust accent (contrast 5.5:1 on light) */
+  --color-accent-hover: #9C3C1D;
+  --color-accent-soft: rgba(184, 74, 40, 0.12);
+  --color-border: #D5CBC0;        /* Subtle border line */
+  --color-border-strong: #B8ACA0;
+  --color-success: #2E6640;
+  --color-error: #B84A28;
+  --color-error-bg: #F5EAE6;
+  --shadow-card: 0 1px 3px rgba(26, 22, 20, 0.06);
+  --shadow-card-hover: 0 4px 14px rgba(26, 22, 20, 0.10);
+}
+
 body {
-  background-color: #0f172a;
-  color: #f8fafc;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
   min-height: 100vh;
+  transition: background-color var(--duration-base) var(--easing-standard), color var(--duration-base) var(--easing-standard);
+}
+
+/* Custom Typography Utilities */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+}
+
+.label-sm {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+}
+
+.book-measure {
+  max-width: 65ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,8 +1,6 @@
 import { IProject, IChapterOutput } from '../../projects/project.model';
 import { GeminiClient } from '../../../shared/gemini/gemini.client';
 import { saveProjectFile, readProjectFile } from '../../../shared/storage/file.storage';
-import { BadRequestError } from '../../../shared/errors';
-
 import { runChaptersStep } from './chapters.step';
 
 export async function runIllustrationsStep(
@@ -36,10 +34,10 @@ export async function runIllustrationsStep(
     }
   }
 
-  const updatedChapters: IChapterOutput[] = [];
-
-  for (const ch of chapters) {
+  for (let i = 0; i < chapters.length; i++) {
+    const ch = chapters[i];
     const filename = `illustration_${ch.id}.jpg`;
+    
     const imageBuffer = await geminiClient.generateImage({
       prompt: ch.illustrationPrompt,
       artStyle,
@@ -49,11 +47,12 @@ export async function runIllustrationsStep(
 
     const savedPath = await saveProjectFile(project._id.toString(), filename, imageBuffer);
 
-    updatedChapters.push({
-      ...ch,
-      illustrationFilename: savedPath,
-    });
+    // Update chapter illustration filename and save incrementally to MongoDB
+    chapters[i].illustrationFilename = savedPath;
+    project.outputs.chapters = chapters;
+    project.markModified('outputs.chapters');
+    await project.save();
   }
 
-  return updatedChapters;
+  return project.outputs.chapters || [];
 }

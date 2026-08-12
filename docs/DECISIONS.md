@@ -90,12 +90,24 @@ We updated `recoverStuckStep` to verify whether a step is actively locked (`isSt
 
 ---
 
+## UI/UX Aesthetic: Neo-Editorial / Dark Academia layout over generic SaaS dashboard
+
+Initial UI prototypes used standard SaaS component layouts (slate/indigo colors, rounded pill badges, equal 3-column card grids, numbered status circles). While functional, this felt like a generic AI dashboard rather than a literary application. 
+
+We redesigned the frontend using a **Neo-Editorial Layout** inspired by contemporary publishing houses and dark academia ("black ink, old library, candlelight"):
+- **Five-Act Narrative Stepper**: Replaced step circles with a narrative chapter progression (`01 — STYLE`, `02 — CHARACTERS`, `03 — PORTRAITS`, `04 — CHAPTERS`, `05 — ILLUSTRATIONS`).
+- **Typography Stack**: `Playfair Display` for display headings, `Source Serif 4` for book content, and `Inter` for micro UI labels (`text-[11px] uppercase tracking-[0.14em]`).
+- **Dual Palettes**: Default **Dark Academia** (`#141311` obsidian, `#1D1B18` charcoal, `#E8E0D2` paper text, `#B65335` oxide rust) with a toggleable **Literary Editorial Light Theme** (`#F5F0E7` paper, `#EDE6D8` raised, `#29231F` warm ink, `#A94E2D` rust accent).
+- **Shape & Motion Discipline**: 4px paper card borders, 3px input radii, zero pill buttons, 150-200ms quiet ease transitions.
+
+---
+
 ## Architectural Trade-Off Matrix
 
 | Decision Area | Choice Implemented | Alternative Considered | Trade-Off / Reason |
 |---|---|---|---|
 | **Architecture Layout** | **Feature-Module** (`auth/`, `projects/`, `pipeline/`, `media/`) | Layered MVC (`controllers/`, `models/`, `routes/`) | Keeps domain logic co-located per feature. Scalable for adding future pipeline steps without touching global folders. |
-| **Async Execution** | **Direct Non-Blocking Async (`setImmediate`)** | Message Queue / BullMQ | Direct non-blocking execution eliminates HTTP timeouts, guarantees zero auto-retry loops, and avoids extra queue worker complexity. |
+| **Pipeline Execution** | **Direct Awaited Execution (`runStep`)** | BullMQ / Fire-and-forget `setImmediate` | An attempt to remove BullMQ landed on a hand-rolled `setImmediate` fire-and-forget instead of true synchronous execution — caught during review and fixed by awaiting `runStep()` directly to guarantee completion before returning HTTP 200. Trimmed BullMQ, Prometheus, Grafana, Loki, node-cron, and dashboard files to remove unnecessary scope. |
 | **Concurrency Lock** | **Redis (`SET NX` with 60s TTL)** | Client-side button disabling | Enforces lock at API level across page refreshes, multiple tabs, and concurrent double-clicks. |
 | **Context Management** | **Gemini Context Caching** | Re-sending full text per call | Drastically reduces API token consumption per pipeline step; requires fallback if caching is unavailable on free-tier keys. |
 | **Error Handling** | **Domain Error Hierarchy (`CustomError`)** | Generic `AppError(status, msg)` | Ensures standardized error JSON payloads (`{ errors: [...] }`) with field-level reporting across all routes. |

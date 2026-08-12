@@ -67,7 +67,7 @@ Run backend and frontend test suites in one command:
 backend/       Express API, feature-module layout (auth, projects, pipeline, media)
 frontend/      Next.js (App Router) web application
 uploads/       Local directory for uploaded book text and generated images (created at runtime)
-docs/          Documentation deliverables (DECISIONS.md, TESTING.md, design-tokens.md)
+docs/          Documentation deliverables (architecture.md, DECISIONS.md, TESTING.md, design-tokens.md, plan.md)
 .agents/       Workspace customization rules and AI instructions (AGENTS.md)
 docker-compose.yml MongoDB and Redis containers
 start.sh       Single script to start containers and dev servers

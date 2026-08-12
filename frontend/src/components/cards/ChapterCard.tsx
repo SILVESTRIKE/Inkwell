@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChapterOutput, api } from '@/lib/api-client';
-import { BookOpen, Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 
 interface ChapterCardProps {
   projectId: string;
@@ -8,38 +8,41 @@ interface ChapterCardProps {
 }
 
 export const ChapterCard: React.FC<ChapterCardProps> = ({ projectId, chapter }) => {
+  const [imageError, setImageError] = useState(false);
   const rawTarget = chapter.illustrationFilename || (chapter as any).illustrationUrl;
   const mediaUrl = rawTarget ? api.getMediaUrl(projectId, rawTarget) : null;
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col md:flex-row gap-5">
-      <div className="w-full md:w-56 h-48 bg-slate-800 rounded-lg overflow-hidden flex items-center justify-center border border-slate-700 shrink-0">
-        {mediaUrl ? (
+    <div className="bg-charcoal border border-rule rounded-md p-6 shadow-card hover:shadow-card-hover transition duration-base flex flex-col md:flex-row gap-6">
+      <div className="w-full md:w-56 h-48 bg-obsidian rounded-xs overflow-hidden flex items-center justify-center border border-rule shrink-0">
+        {mediaUrl && !imageError ? (
           <img
             src={mediaUrl}
             alt={chapter.chapterTitle}
+            onError={() => setImageError(true)}
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center text-slate-500">
-            <ImageIcon className="w-8 h-8 mb-2 stroke-1" />
-            <span className="text-xs">Illustration Pending</span>
+          <div className="flex flex-col items-center justify-center text-muted font-ui">
+            <ImageIcon className="w-5 h-5 mb-1.5 stroke-1 text-faint" />
+            <span className="text-[11px] uppercase tracking-wider font-medium">
+              {imageError ? 'Load Failed' : 'Illustration Pending'}
+            </span>
           </div>
         )}
       </div>
 
       <div className="flex-1 flex flex-col justify-between">
         <div>
-          <div className="flex items-center space-x-2 mb-2">
-            <BookOpen className="w-5 h-5 text-indigo-400" />
-            <h4 className="text-lg font-semibold text-white">{chapter.chapterTitle}</h4>
-          </div>
-          <p className="text-sm text-slate-300 mb-3">{chapter.description}</p>
+          <h4 className="text-xl font-display font-bold text-paper mb-2">{chapter.chapterTitle}</h4>
+          <p className="text-sm font-body text-paper/90 leading-relaxed">{chapter.description}</p>
         </div>
 
-        <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800 text-xs font-mono text-slate-400">
-          <span className="text-indigo-400 font-sans text-xs font-semibold block mb-1">Illustration Prompt:</span>
-          {chapter.illustrationPrompt}
+        <div className="pt-3 border-t border-rule mt-4 text-xs">
+          <span className="label-sm block mb-1.5">Illustration Prompt</span>
+          <div className="bg-sunken p-3 rounded-xs border border-rule">
+            <span className="text-muted leading-relaxed font-mono text-[11px] block">{chapter.illustrationPrompt}</span>
+          </div>
         </div>
       </div>
     </div>

@@ -80,7 +80,7 @@ export class GeminiClient {
     }
   }
 
-  // Generate text or structured JSON with multi-key failover
+  // Generate text or structured JSON with multi-key failover and explicit error propagation
   async generateText(options: GeminiTextOptions): Promise<string> {
     if (this.apiKeys.length === 0) {
       return this.getMockTextResponse(options.prompt);
@@ -133,15 +133,13 @@ export class GeminiClient {
             lastError = new Error(`Gemini API rate-limited (429): ${errText}`);
             continue; // Retry with next API key in pool
           }
-          logger.warn(`[GeminiClient] Text generation API returned HTTP ${response.status}. Falling back to default response: ${errText}`);
-          return this.getMockTextResponse(options.prompt);
+          throw new Error(`Gemini Text API returned HTTP ${response.status}: ${errText}`);
         }
 
         const data = await response.json();
         const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!candidateText) {
-          logger.warn('[GeminiClient] Gemini API returned empty candidate text. Falling back to default response.');
-          return this.getMockTextResponse(options.prompt);
+          throw new Error('Gemini Text API returned empty candidate text.');
         }
 
         return candidateText;
@@ -150,40 +148,58 @@ export class GeminiClient {
         if (attempt < maxAttempts - 1 && err.message?.includes('429')) {
           continue;
         }
-        logger.warn(`[GeminiClient] Text generation failed (${err.message}). Falling back to default response.`);
-        return this.getMockTextResponse(options.prompt);
+        throw err;
       }
     }
 
-    logger.warn('[GeminiClient] All API keys exhausted. Falling back to default text response.');
-    return this.getMockTextResponse(options.prompt);
+    throw lastError || new Error('All Gemini API keys exhausted without success.');
   }
 
-  // Generate Image (Imagen 3 API) with multi-key failover
+  // Generate Image using gemini-3.1-flash-image generateContent with multimodal character consistency
   async generateImage(options: GeminiImageOptions): Promise<Buffer> {
     if (this.apiKeys.length === 0) {
       return this.getMockImageBuffer();
     }
 
-    const fullPrompt = options.artStyle
+    let fullPrompt = options.artStyle
       ? `Art style: ${options.artStyle}. ${options.prompt}`
       : options.prompt;
+
+    if (options.characterDescriptions && options.characterDescriptions.length > 0) {
+      fullPrompt += `\nCharacters present: ${options.characterDescriptions.join('; ')}`;
+    }
+
+    const parts: any[] = [{ text: fullPrompt }];
+
+    // Multimodal character consistency: pass saved character portrait image buffers as inlineData parts
+    if (options.characterPortraits && options.characterPortraits.length > 0) {
+      for (const portraitBuf of options.characterPortraits) {
+        if (portraitBuf && portraitBuf.length > 0) {
+          parts.push({
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: portraitBuf.toString('base64'),
+            },
+          });
+        }
+      }
+    }
+
+    const requestBody = {
+      contents: [
+        {
+          role: 'user',
+          parts,
+        },
+      ],
+    };
 
     const maxAttempts = Math.max(1, this.apiKeys.length);
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const apiKey = this.getNextApiKey();
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.imageModel}:predict?key=${apiKey}`;
-
-      const requestBody = {
-        instances: [{ prompt: fullPrompt }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: '1:1',
-          outputOptions: { mimeType: 'image/jpeg' },
-        },
-      };
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.imageModel}:generateContent?key=${apiKey}`;
 
       try {
         const response = await fetch(url, {
@@ -199,30 +215,52 @@ export class GeminiClient {
             lastError = new Error(`Gemini Image API rate-limited (429): ${errText}`);
             continue;
           }
-          logger.warn(`[GeminiClient] Imagen 3 API returned HTTP ${response.status}. Falling back to local placeholder image: ${errText}`);
-          return this.getMockImageBuffer();
+
+          // Fallback to imagen-3.0-generate-002:predict endpoint if generateContent on model is unssupported by older keys
+          const legacyPredictUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+          const legacyBody = {
+            instances: [{ prompt: fullPrompt }],
+            parameters: { sampleCount: 1, aspectRatio: '1:1', outputOptions: { mimeType: 'image/jpeg' } },
+          };
+          const predictRes = await fetch(legacyPredictUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(legacyBody),
+          });
+
+          if (predictRes.ok) {
+            const predictData = await predictRes.json();
+            const b64 = predictData.predictions?.[0]?.bytesBase64Encoded;
+            if (b64) return Buffer.from(b64, 'base64');
+          }
+
+          throw new Error(`Gemini Image API returned HTTP ${response.status}: ${errText}`);
         }
 
         const data = await response.json();
-        const base64Image = data.predictions?.[0]?.bytesBase64Encoded;
-        if (!base64Image) {
-          logger.warn('[GeminiClient] Gemini Image API returned empty predictions. Falling back to placeholder image.');
-          return this.getMockImageBuffer();
+        const candidateParts = data.candidates?.[0]?.content?.parts || [];
+        
+        for (const part of candidateParts) {
+          if (part.inlineData?.data) {
+            return Buffer.from(part.inlineData.data, 'base64');
+          }
         }
 
-        return Buffer.from(base64Image, 'base64');
+        if (data.predictions?.[0]?.bytesBase64Encoded) {
+          return Buffer.from(data.predictions[0].bytesBase64Encoded, 'base64');
+        }
+
+        throw new Error('Gemini Image API returned invalid response payload structure (no inlineData bytes found).');
       } catch (err: any) {
         lastError = err;
         if (attempt < maxAttempts - 1 && err.message?.includes('429')) {
           continue;
         }
-        logger.warn(`[GeminiClient] Image generation failed (${err.message}). Falling back to local placeholder image.`);
-        return this.getMockImageBuffer();
+        throw err;
       }
     }
 
-    logger.warn('[GeminiClient] All image keys exhausted. Returning local placeholder image.');
-    return this.getMockImageBuffer();
+    throw lastError || new Error('All Gemini image API keys exhausted without success.');
   }
 
   private getMockTextResponse(prompt: string): string {

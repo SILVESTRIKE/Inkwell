@@ -15,15 +15,18 @@ This document is the workspace customization root (`.agents/AGENTS.md`) for AI a
 7. **Explicit Error Propagation**: Never swallow real Gemini API errors with silent mock fallbacks. Failures must throw directly so step status transitions to `'failed'`, enabling user retries.
 8. **Multimodal Character Consistency**: Pass Step 3 portrait `.jpg` binary buffers into `illustrations.step.ts` as `inlineData` image parts to `gemini-3.1-flash-image` (Nano Banana) alongside scene prompts.
 9. **Media Storage**: Store uploaded book text and generated images in date-structured paths (`uploads/images/YYYY/MM/<projectId>_<filename>`) served via `/api/media/files/...` with JWT query auth (`?token=...`).
+10. **Incremental Image Persistence**: Save image filenames to MongoDB immediately after generating each individual character portrait / chapter illustration to avoid data loss and enable live per-item UI progress (§4.4).
+11. **Dual-Token Authentication**: Issue 15-minute Access Token + 7-day Refresh Token in HttpOnly cookie (`sameSite=lax`), supporting automatic silent token refresh on 401 `TOKEN_EXPIRED`.
+12. **Neo-Editorial UI Architecture**: Neo-Editorial visual system (Playfair Display + Source Serif 4 + Inter/Geist), five-act narrative stepper (`01 — STYLE` to `05 — ILLUSTRATIONS`), paper-like 4px radii, and exact specified dark/light palettes.
 
 ---
 
 ## 2. Tech Stack & Architecture
 
 - **Backend**: Node.js, Express (Feature-module layout: `auth/`, `projects/`, `pipeline/`, `media/`)
-- **Frontend**: Next.js (App Router, TypeScript), Tailwind CSS (Literary/Analog theme tokens)
+- **Frontend**: Next.js (App Router, TypeScript), Tailwind CSS (Neo-Editorial / Dark Academia theme tokens)
 - **Database**: MongoDB (Mongoose) for durable state; Redis for `SET NX` step-locks.
-- **AI Provider**: Google Gemini API (`gemini-3.6-flash` for text, `gemini-3.1-flash-image` for images).
+- **AI Provider**: Google Gemini API (`gemini-3.6-flash` for text, `gemini-3.1-flash-image` via `generateContent` for images).
 - **Testing**: Vitest for backend & frontend component tests.
 
 ---
@@ -33,7 +36,13 @@ This document is the workspace customization root (`.agents/AGENTS.md`) for AI a
 - **TypeScript Strict Mode**: Explicit typing across backend and frontend. No unhandled `any`.
 - **Validation**: Schema validation with `Zod` at boundary endpoints.
 - **Error Handling**: Domain error classes (`BadRequestError`, `NotFoundError`, `ConflictError`) mapped via central Express `errorHandler` middleware.
-- **Documentation Deliverables**: Maintain `docs/DECISIONS.md`, `docs/TESTING.md`, and `README.md` co-located with code changes.
+- **Documentation Deliverables**:
+  - [`docs/architecture.md`](file:///docs/architecture.md): System architecture and data flow.
+  - [`docs/DECISIONS.md`](file:///docs/DECISIONS.md): Key decisions, AI overrides, and trade-offs.
+  - [`docs/TESTING.md`](file:///docs/TESTING.md): Testing strategy and execution results.
+  - [`docs/design-tokens.md`](file:///docs/design-tokens.md): Neo-Editorial / Dark Academia UI design tokens.
+  - [`docs/plan.md`](file:///docs/plan.md): Task list and phase deliverables.
+  - [`README.md`](file:///README.md): Quick start and overview.
 
 ---
 

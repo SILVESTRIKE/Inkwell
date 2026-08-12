@@ -1,12 +1,17 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const STORAGE_KEY = 'inkwell_session';
+const LEGACY_STORAGE_KEY = 'book_studio_session';
 
 export interface UserSession {
-  token: string;
+  accessToken: string;
+  refreshToken?: string;
+  token?: string; // fallback for legacy payload
   user: {
     id: string;
     email: string;
     name: string;
   };
+  expiresAt?: string;
 }
 
 export interface StepState {
@@ -55,19 +60,93 @@ export interface ProjectData {
   updatedAt: string;
 }
 
-function getStoredToken(): string | null {
+function getStoredSession(): UserSession | null {
   if (typeof window === 'undefined') return null;
-  const session = localStorage.getItem('book_studio_session');
-  if (!session) return null;
+
+  // Migration check: if legacy key exists, migrate it to inkwell_session
+  const legacySession = localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (legacySession && !localStorage.getItem(STORAGE_KEY)) {
+    localStorage.setItem(STORAGE_KEY, legacySession);
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  }
+
+  const sessionStr = localStorage.getItem(STORAGE_KEY);
+  if (!sessionStr) return null;
+
   try {
-    const parsed = JSON.parse(session);
-    return parsed.token || null;
+    const parsed: UserSession = JSON.parse(sessionStr);
+    // Backwards compatibility normalization
+    if (!parsed.accessToken && parsed.token) {
+      parsed.accessToken = parsed.token;
+    }
+    return parsed;
   } catch {
     return null;
   }
 }
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+function getStoredToken(): string | null {
+  const session = getStoredSession();
+  return session ? session.accessToken : null;
+}
+
+let refreshTokenPromise: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  if (refreshTokenPromise) {
+    return refreshTokenPromise;
+  }
+
+  refreshTokenPromise = (async () => {
+    try {
+      const currentSession = getStoredSession();
+      const refreshToken = currentSession?.refreshToken;
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: refreshToken ? JSON.stringify({ refreshToken }) : undefined,
+      });
+
+      if (!response.ok) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+        }
+        return false;
+      }
+
+      const data = await response.json();
+      if (currentSession && data.accessToken) {
+        const updatedSession: UserSession = {
+          ...currentSession,
+          accessToken: data.accessToken,
+          token: data.accessToken,
+          refreshToken: data.refreshToken || currentSession.refreshToken,
+          expiresAt: data.expiresAt || currentSession.expiresAt,
+        };
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSession));
+        }
+        return true;
+      }
+      return false;
+    } catch {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+      return false;
+    } finally {
+      refreshTokenPromise = null;
+    }
+  })();
+
+  return refreshTokenPromise;
+}
+
+async function request<T>(endpoint: string, options: RequestInit = {}, retryOn401 = true): Promise<T> {
   const token = getStoredToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -81,7 +160,19 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials: 'include', // Include HttpOnly cookies on API requests
   });
+
+  if (response.status === 401 && retryOn401) {
+    const errorData = await response.json().catch(() => ({}));
+    if (errorData.code === 'TOKEN_EXPIRED' || errorData.error === 'Access token expired') {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        // Retry original request with new access token
+        return request<T>(endpoint, options, false);
+      }
+    }
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: response.statusText }));
@@ -97,15 +188,28 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, name }),
     });
+    // Ensure accessToken field is set
+    const sessionData: UserSession = {
+      ...data,
+      accessToken: data.accessToken || (data as any).token,
+    };
     if (typeof window !== 'undefined') {
-      localStorage.setItem('book_studio_session', JSON.stringify(data));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
     }
-    return data;
+    return sessionData;
   },
 
   async logout(): Promise<void> {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('book_studio_session');
+    try {
+      await request<{ message: string }>('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore network errors on logout
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
     }
   },
 
@@ -131,8 +235,8 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ userStyle }),
       }
-    )
-    return result.project
+    );
+    return result.project;
   },
 
   async recoverStep(projectId: string, stepNumber: number): Promise<ProjectData> {

@@ -2,7 +2,6 @@ import { Project, IProject } from '../projects/project.model';
 import { BadRequestError, NotFoundError, ConflictError } from '../../shared/errors';
 import { acquireStepLock, releaseStepLock, isStepLocked } from '../../shared/locks/step.lock';
 import { GeminiClient } from '../../shared/gemini/gemini.client';
-import { pipelineQueue } from '../../shared/queue/pipeline.queue';
 import { logger } from '../../shared/logger/logger';
 import { runStyleStep } from './steps/style.step';
 import { runCharactersStep } from './steps/characters.step';
@@ -15,16 +14,16 @@ import { PipelineLog } from './pipeline-log.model';
 export class PipelineService {
   private geminiClient = new GeminiClient();
 
-  // Enqueue step execution to BullMQ queue for async processing
-  async enqueueStep(
+  // Execute step synchronously with Redis SET NX lock protection
+  async runStep(
     userId: string,
     projectId: string,
     stepNumber: number,
     options?: { userStyle?: string }
-  ): Promise<{ message: string; jobId: string; project: IProject }> {
+  ): Promise<IProject> {
     const project = await this.validateStepPrerequisites(userId, projectId, stepNumber);
 
-    // Acquire lock & mark step running in Mongo
+    // Acquire lock to guarantee no duplicate execution across tabs or concurrent requests
     const lockAcquired = await acquireStepLock(projectId, stepNumber);
     if (!lockAcquired) {
       throw new ConflictError(`Step ${stepNumber} is currently running in another request.`);
@@ -37,36 +36,6 @@ export class PipelineService {
     project.overallStatus = 'in_progress';
     project.currentStepNumber = stepNumber;
     await project.save();
-
-    // Direct non-blocking background execution protected by Redis SET NX lock
-    setImmediate(() => {
-      this.executeStepDirect(userId, projectId, stepNumber, options).catch((err) => {
-        logger.error(`[PipelineService] Step ${stepNumber} execution failed: ${err.message}`);
-      });
-    });
-
-    logger.info(`Started step ${stepNumber} for project ${projectId} in background task`);
-
-    return {
-      message: `Step ${stepNumber} started successfully`,
-      jobId: `step-${stepNumber}-${Date.now()}`,
-      project,
-    };
-  }
-
-  // Called by BullMQ worker or direct execution
-  async executeStepDirect(
-    userId: string,
-    projectId: string,
-    stepNumber: number,
-    options?: { userStyle?: string }
-  ): Promise<IProject> {
-    const project = await Project.findOne({ _id: projectId, userId, isDeleted: { $ne: true } });
-    if (!project) {
-      throw new NotFoundError('Project not found');
-    }
-
-    const currentStepState = project.stepStates.find(s => s.stepNumber === stepNumber)!;
 
     const stepNames = ['style', 'characters', 'portraits', 'chapters', 'illustrations'];
     const stepName = stepNames[stepNumber - 1] || `step-${stepNumber}`;
@@ -175,7 +144,7 @@ export class PipelineService {
         error: err.message || 'Step execution failed',
         durationMs: Date.now() - startTime,
       });
-      await project.save();
+
       throw err;
     } finally {
       await releaseStepLock(projectId, stepNumber);
@@ -226,9 +195,15 @@ export class PipelineService {
       throw new BadRequestError('Invalid step number', 'stepNumber');
     }
 
-    // Staleness / Lock Guard: Only recover if step is actually running, failed, or locked
     const isLocked = await isStepLocked(projectId, stepNumber);
-    if (stepState.status !== 'running' && !isLocked && stepState.status !== 'failed') {
+
+    // Staleness Guard: Refuse to recover if step is actively running AND currently locked
+    if (stepState.status === 'running' && isLocked) {
+      throw new ConflictError(`Step ${stepNumber} is currently running and locked by an active process. Cannot recover an in-flight step.`);
+    }
+
+    // Only allow recovery if status is failed, or running with an expired/missing lock
+    if (stepState.status !== 'running' && stepState.status !== 'failed') {
       throw new BadRequestError(`Step ${stepNumber} is currently '${stepState.status}' and does not require stuck-state recovery.`);
     }
 

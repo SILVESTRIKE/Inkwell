@@ -15,10 +15,10 @@ describe('Stepper Component', () => {
 
   it('renders all 5 pipeline step labels', () => {
     render(<Stepper stepStates={mockStepStates} currentStepNumber={2} />);
-    expect(screen.getByText('1. Style')).toBeInTheDocument();
-    expect(screen.getByText('2. Characters')).toBeInTheDocument();
-    expect(screen.getByText('3. Portraits')).toBeInTheDocument();
-    expect(screen.getByText('4. Chapters')).toBeInTheDocument();
-    expect(screen.getByText('5. Illustrations')).toBeInTheDocument();
+    expect(screen.getByText('STYLE')).toBeInTheDocument();
+    expect(screen.getByText('CHARACTERS')).toBeInTheDocument();
+    expect(screen.getByText('PORTRAITS')).toBeInTheDocument();
+    expect(screen.getByText('CHAPTERS')).toBeInTheDocument();
+    expect(screen.getByText('ILLUSTRATIONS')).toBeInTheDocument();
   });
 });

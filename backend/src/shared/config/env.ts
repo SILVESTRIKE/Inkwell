@@ -11,6 +11,7 @@ const envSchema = z.object({
   MONGO_URI: z.string().default('mongodb://localhost:27017/inkwell'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   JWT_SECRET: z.string().default('development-jwt-secret-key-12345'),
+  JWT_REFRESH_SECRET: z.string().default('development-jwt-refresh-secret-key-67890'),
   GEMINI_API_KEY: z.string().optional().default(''),
   GEMINI_API_KEYS: z.string().optional().default(''),
   STORAGE_DIR: z.string().default('./uploads'),
