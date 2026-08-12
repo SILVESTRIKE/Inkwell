@@ -86,10 +86,6 @@ export const BookSpineRow: React.FC<BookSpineRowProps> = ({ project, index }) =>
             >
               {lifecycleState}
             </span>
-
-            <span className="font-bold text-paper text-xs bg-obsidian px-2.5 py-1 rounded-xs border border-rule">
-              0{completedCount} / 05
-            </span>
           </div>
         </div>
 
