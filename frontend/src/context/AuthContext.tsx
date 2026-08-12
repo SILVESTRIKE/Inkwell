@@ -25,33 +25,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Migration fallback check
-    let session = localStorage.getItem(STORAGE_KEY);
-    if (!session) {
-      session = localStorage.getItem(LEGACY_STORAGE_KEY);
-      if (session) {
-        localStorage.setItem(STORAGE_KEY, session);
-        localStorage.removeItem(LEGACY_STORAGE_KEY);
-      }
-    }
-
-    if (session) {
+    const initAuth = async () => {
       try {
-        const parsed: UserSession = JSON.parse(session);
-        // Check session lifetime
-        if (parsed.expiresAt && new Date(parsed.expiresAt).getTime() < Date.now()) {
-          localStorage.removeItem(STORAGE_KEY);
-          localStorage.removeItem(LEGACY_STORAGE_KEY);
-          setUser(null);
-        } else {
-          setUser(parsed.user);
+        let session = api.getStoredSession();
+        if (!session) {
+          // Attempt silent refresh via HttpOnly cookie if access token is missing
+          const refreshed = await api.refreshAccessToken();
+          if (refreshed) {
+            session = api.getStoredSession();
+          }
+        } else if (session.expiresAt && new Date(session.expiresAt).getTime() < Date.now()) {
+          // Access token expired, attempt silent refresh via HttpOnly cookie
+          const refreshed = await api.refreshAccessToken();
+          if (refreshed) {
+            session = api.getStoredSession();
+          } else {
+            session = null;
+          }
         }
+        setUser(session ? session.user : null);
       } catch {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (email: string, name: string) => {

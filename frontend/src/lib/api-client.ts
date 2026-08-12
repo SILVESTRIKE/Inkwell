@@ -213,6 +213,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retryOn40
 }
 
 export const api = {
+  getStoredSession,
+  refreshAccessToken,
   async login(email: string, name: string): Promise<UserSession> {
     const data = await request<UserSession>('/api/auth/session', {
       method: 'POST',
