@@ -32,6 +32,31 @@ const STEP_NAMES = [
   '5. Scene Illustrations',
 ];
 
+function cleanErrorMessage(rawError?: string): string {
+  if (!rawError) return 'Execution encountered an unexpected error. Please retry.';
+
+  if (rawError.includes('429') || rawError.includes('quota') || rawError.includes('RESOURCE_EXHAUSTED')) {
+    return 'Gemini API rate limit exceeded (429). Please wait ~30 seconds before retrying.';
+  }
+
+  if (rawError.includes('{') && rawError.includes('}')) {
+    try {
+      const jsonStart = rawError.indexOf('{');
+      const jsonEnd = rawError.lastIndexOf('}') + 1;
+      const jsonStr = rawError.substring(jsonStart, jsonEnd);
+      const parsed = JSON.parse(jsonStr);
+      if (parsed.error?.message) {
+        const firstLine = parsed.error.message.split('\n')[0].replace(/^\*\s*/, '');
+        return `Gemini API Error: ${firstLine}`;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return rawError.length > 200 ? `${rawError.substring(0, 200)}...` : rawError;
+}
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
@@ -218,15 +243,15 @@ export default function ProjectDetailPage() {
 
       {/* Error & Retry State Banner */}
       {currentStepState?.status === 'failed' && (
-        <div className="bg-error-bg border border-error/30 rounded-md p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-error font-ui">
-          <div className="flex items-start space-x-2.5">
-            <AlertCircle className="w-4 h-4 text-error shrink-0 mt-0.5" />
-            <div>
+        <div className="bg-error-bg border border-error/30 rounded-md p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-error font-ui shadow-card">
+          <div className="flex items-start space-x-3 flex-1">
+            <AlertCircle className="w-5 h-5 text-error shrink-0 mt-0.5" />
+            <div className="space-y-1">
               <h4 className="text-xs font-semibold">
                 {STEP_NAMES[currentStepNumber - 1]} Failed
               </h4>
-              <p className="text-xs opacity-90 mt-0.5">
-                {currentStepState.error || 'Execution encountered an error.'}
+              <p className="text-xs opacity-95 leading-relaxed font-medium">
+                {cleanErrorMessage(currentStepState.error)}
               </p>
             </div>
           </div>
