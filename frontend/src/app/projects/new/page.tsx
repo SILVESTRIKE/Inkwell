@@ -79,93 +79,107 @@ export default function NewProjectPage() {
   if (!user) return <AuthModal />;
 
   return (
-    <div className="max-w-2xl mx-auto w-full px-4 py-8 sm:px-8 sm:py-12 space-y-8 font-ui">
-      <div className="flex items-center space-x-3 border-b border-rule pb-6">
-        <Link
-          href="/projects"
-          className="p-1.5 bg-charcoal hover:bg-obsidian text-muted hover:text-paper rounded-sm border border-rule transition duration-fast"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div>
-          <span className="label-sm block mb-0.5">New Project</span>
-          <h2 className="text-2xl font-display font-bold text-paper">
-            Import Storybook Text
-          </h2>
+    <div className="max-w-4xl mx-auto w-full px-4 sm:px-8 py-8 sm:py-12 space-y-8 font-ui">
+      {/* Page Header */}
+      <div className="flex items-start justify-between border-b border-rule pb-6">
+        <div className="flex items-center space-x-3">
+          <Link
+            href="/projects"
+            className="p-2 bg-charcoal hover:bg-obsidian text-muted hover:text-paper rounded-sm border border-rule transition duration-fast"
+            title="Back to Catalog"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <div>
+            <span className="label-sm block mb-1">New Manuscript</span>
+            <h2 className="text-3xl font-display font-bold text-paper tracking-tight">
+              Import Storybook Text
+            </h2>
+            <p className="text-xs font-body text-muted mt-1 leading-relaxed">
+              Upload a plain text manuscript or paste your story excerpt to initiate the 5-act pipeline.
+            </p>
+          </div>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-error-bg border border-error/20 rounded-xs text-error text-xs">
-          {error}
+        <div className="p-4 bg-error-bg border border-error/30 rounded-sm text-error text-xs font-medium flex items-center space-x-2">
+          <FileText className="w-4 h-4 text-error shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-charcoal border border-rule rounded-md p-6 sm:p-8 shadow-card space-y-6">
-        <div>
-          <label className="block label-sm mb-2">
-            Project Title *
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder="e.g. The Wind in the Willows"
-            className="w-full px-4 py-2.5 bg-obsidian border border-rule-strong rounded-sm text-paper text-sm placeholder-faint focus:outline-none focus:border-oxide transition duration-fast"
-            required
-          />
-        </div>
+      {/* Main Creation Card */}
+      <form onSubmit={handleSubmit} className="bg-charcoal border border-rule rounded-md p-6 sm:p-8 shadow-card space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Title & Upload Dropzone */}
+          <div className="lg:col-span-5 space-y-6">
+            <div>
+              <label className="block label-sm mb-2 text-paper">
+                Project Title <span className="text-oxide">*</span>
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="e.g. The Wind in the Willows"
+                className="w-full px-4 py-2.5 bg-obsidian border border-rule-strong rounded-sm text-paper text-sm placeholder-faint focus:outline-none focus:border-oxide transition duration-fast"
+                required
+              />
+            </div>
 
-        <div>
-          <label className="block label-sm mb-2">
-            Upload Plain Text File (.txt)
-          </label>
-          <div className="flex items-center justify-center w-full">
-            <label className="flex flex-col items-center justify-center w-full h-24 border border-rule border-dashed rounded-sm cursor-pointer bg-obsidian hover:bg-charcoal transition duration-fast">
-              <div className="flex flex-col items-center justify-center py-3">
-                <Upload className="w-5 h-5 mb-1 text-faint" />
-                <p className="text-xs text-muted">
-                  <span className="font-semibold text-oxide">Click to select</span> or drag plain text manuscript (.txt)
-                </p>
+            <div>
+              <label className="block label-sm mb-2 text-paper">
+                Upload Manuscript File (.txt)
+              </label>
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border border-rule border-dashed rounded-sm cursor-pointer bg-obsidian hover:bg-sunken transition duration-fast p-4 text-center group">
+                  <Upload className="w-6 h-6 mb-2 text-muted group-hover:text-oxide transition duration-fast" />
+                  <p className="text-xs text-muted leading-relaxed">
+                    <span className="font-semibold text-oxide">Click to browse</span> or drag plain text manuscript file (<span className="font-mono text-faint">.txt</span>)
+                  </p>
+                  <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden" />
+                </label>
               </div>
-              <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden" />
-            </label>
+            </div>
+          </div>
+
+          {/* Right Column: Manuscript Text Editor */}
+          <div className="lg:col-span-7 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block label-sm text-paper">
+                Manuscript Text Content <span className="text-oxide">*</span>
+              </label>
+              <span className="text-xs text-faint font-mono flex items-center gap-1.5 bg-obsidian px-2 py-0.5 rounded-xs border border-rule">
+                <FileText className="w-3.5 h-3.5 text-oxide" />
+                {bookText.length} characters
+              </span>
+            </div>
+            <textarea
+              value={bookText}
+              onChange={e => setBookText(e.target.value)}
+              rows={12}
+              placeholder="Paste your story excerpt or book chapter text here..."
+              className="w-full p-4 bg-obsidian border border-rule-strong rounded-sm text-paper placeholder-faint focus:outline-none focus:border-oxide transition duration-fast font-body text-xs sm:text-sm leading-relaxed"
+              required
+            />
           </div>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="block label-sm">
-              Manuscript Text Content *
-            </label>
-            <span className="text-xs text-faint font-mono flex items-center gap-1">
-              <FileText className="w-3.5 h-3.5" />
-              {bookText.length} characters
-            </span>
-          </div>
-          <textarea
-            value={bookText}
-            onChange={e => setBookText(e.target.value)}
-            rows={10}
-            placeholder="Paste your story excerpt or book chapter here..."
-            className="w-full p-4 bg-obsidian border border-rule-strong rounded-sm text-paper placeholder-faint focus:outline-none focus:border-oxide transition duration-fast font-body text-sm leading-relaxed book-measure"
-            required
-          />
-        </div>
-
-        <div className="flex justify-end space-x-3 pt-4 border-t border-rule">
+        {/* Action Row */}
+        <div className="flex items-center justify-end space-x-3 pt-6 border-t border-rule">
           <Link
             href="/projects"
-            className="px-4 py-2 bg-obsidian hover:bg-charcoal text-muted hover:text-paper border border-rule rounded-sm text-xs font-semibold uppercase tracking-wider transition duration-fast"
+            className="px-5 py-2.5 bg-obsidian hover:bg-sunken text-muted hover:text-paper border border-rule rounded-sm text-xs font-semibold uppercase tracking-wider transition duration-fast"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={submitting}
-            className="px-5 py-2 bg-oxide hover:bg-oxide-hover text-paper text-xs font-semibold uppercase tracking-wider rounded-sm shadow-card transition duration-fast disabled:opacity-50"
+            className="px-6 py-2.5 bg-oxide hover:bg-oxide-hover text-paper text-xs font-bold uppercase tracking-wider rounded-sm shadow-card transition duration-fast disabled:opacity-50 cursor-pointer"
           >
-            {submitting ? 'Initializing...' : 'Initialize Project'}
+            {submitting ? 'Initializing Pipeline...' : 'Initialize Project'}
           </button>
         </div>
       </form>
