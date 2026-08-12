@@ -15,6 +15,8 @@ const envSchema = z.object({
   REDIS_URL: z.string().min(1, 'REDIS_URL must be provided in .env'),
   JWT_SECRET: z.string().min(1, 'JWT_SECRET must be provided in .env'),
   JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET must be provided in .env'),
+  JWT_EXPIRES_IN: z.string().min(1, 'JWT_EXPIRES_IN must be provided in .env'),
+  JWT_REFRESH_EXPIRES_IN: z.string().min(1, 'JWT_REFRESH_EXPIRES_IN must be provided in .env'),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_API_KEYS: z.string().optional(),
   STORAGE_DIR: z.string().min(1, 'STORAGE_DIR must be provided in .env'),
