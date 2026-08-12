@@ -13,10 +13,11 @@ export class PipelineController {
       const stepNumber = parseInt(req.params.step, 10);
       const { userStyle } = req.body || {};
 
-      const result = await pipelineService.enqueueStep(userId, projectId, stepNumber, { userStyle });
-      res.status(202).json({
-        ...result,
-        project: transformMediaURLs(req, result.project),
+      const project = await pipelineService.runStep(userId, projectId, stepNumber, { userStyle });
+      res.status(200).json({
+        message: `Step ${stepNumber} completed successfully`,
+        jobId: `step-${stepNumber}-${Date.now()}`,
+        project: transformMediaURLs(req, project),
       });
     } catch (err) {
       next(err);

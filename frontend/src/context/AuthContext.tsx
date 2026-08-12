@@ -3,6 +3,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api, UserSession } from '@/lib/api-client';
 
+const STORAGE_KEY = 'inkwell_session';
+const LEGACY_STORAGE_KEY = 'book_studio_session';
+
 interface AuthContextType {
   user: UserSession['user'] | null;
   loading: boolean;
@@ -22,13 +25,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const session = localStorage.getItem('book_studio_session');
+    // Migration fallback check
+    let session = localStorage.getItem(STORAGE_KEY);
+    if (!session) {
+      session = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (session) {
+        localStorage.setItem(STORAGE_KEY, session);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+    }
+
     if (session) {
       try {
         const parsed: UserSession = JSON.parse(session);
-        setUser(parsed.user);
+        // Check session lifetime
+        if (parsed.expiresAt && new Date(parsed.expiresAt).getTime() < Date.now()) {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+          setUser(null);
+        } else {
+          setUser(parsed.user);
+        }
       } catch {
-        localStorage.removeItem('book_studio_session');
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
       }
     }
     setLoading(false);
@@ -39,8 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(session.user);
   };
 
-  const logout = () => {
-    api.logout();
+  const logout = async () => {
+    await api.logout();
     setUser(null);
   };
 

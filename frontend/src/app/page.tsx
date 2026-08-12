@@ -11,7 +11,7 @@ export default function RootPage() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-950 text-slate-400">
+    <div className="flex items-center justify-center min-h-[60vh] text-muted text-sm font-ui">
       Loading Book Studio...
     </div>
   );

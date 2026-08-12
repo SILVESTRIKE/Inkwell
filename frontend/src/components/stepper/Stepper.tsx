@@ -1,6 +1,6 @@
 import React from 'react';
 import { StepState } from '@/lib/api-client';
-import { CheckCircle2, Loader2, AlertCircle, Circle } from 'lucide-react';
+import { Check, AlertCircle } from 'lucide-react';
 
 interface StepperProps {
   stepStates: StepState[];
@@ -8,61 +8,101 @@ interface StepperProps {
   onSelectStep?: (stepNum: number) => void;
 }
 
-const STEP_LABELS = [
-  '1. Style',
-  '2. Characters',
-  '3. Portraits',
-  '4. Chapters',
-  '5. Illustrations',
+export const NARRATIVE_STEPS = [
+  {
+    stepNumber: 1,
+    numStr: '01',
+    name: 'STYLE',
+    subtitle: 'Define visual language',
+  },
+  {
+    stepNumber: 2,
+    numStr: '02',
+    name: 'CHARACTERS',
+    subtitle: 'Discover the cast',
+  },
+  {
+    stepNumber: 3,
+    numStr: '03',
+    name: 'PORTRAITS',
+    subtitle: 'Give them a face',
+  },
+  {
+    stepNumber: 4,
+    numStr: '04',
+    name: 'CHAPTERS',
+    subtitle: 'Understand the world',
+  },
+  {
+    stepNumber: 5,
+    numStr: '05',
+    name: 'ILLUSTRATIONS',
+    subtitle: 'Bring story to life',
+  },
 ];
 
 export const Stepper: React.FC<StepperProps> = ({ stepStates = [], currentStepNumber, onSelectStep }) => {
   const safeStepStates = stepStates || [];
+
   return (
-    <div className="w-full py-4 border-b border-slate-800 bg-slate-900/50 px-6 rounded-xl mb-6">
-      <div className="flex items-center justify-between">
-        {STEP_LABELS.map((label, idx) => {
-          const stepNum = idx + 1;
-          const state = safeStepStates.find(s => s.stepNumber === stepNum);
+    <div className="w-full py-6 border-y border-rule my-6 font-ui">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 sm:gap-2">
+        {NARRATIVE_STEPS.map((step) => {
+          const state = safeStepStates.find(s => s.stepNumber === step.stepNumber);
           const status = state?.status || 'pending';
-          const isCurrent = currentStepNumber === stepNum;
+          const isCurrent = currentStepNumber === step.stepNumber;
 
           return (
-            <div key={stepNum} className="flex items-center space-x-3">
-              <button
-                type="button"
-                onClick={() => onSelectStep?.(stepNum)}
-                className="flex flex-col items-center group focus:outline-none cursor-pointer"
-                title={`Select ${label}`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all group-hover:scale-105 ${
-                    status === 'done'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500'
-                      : status === 'running'
-                      ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500 animate-pulse'
-                      : status === 'failed'
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500'
-                      : isCurrent
-                      ? 'bg-indigo-600 text-white border border-indigo-400'
-                      : 'bg-slate-800 text-slate-500 border border-slate-700'
-                  }`}
-                >
-                  {status === 'done' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-                  {status === 'running' && <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />}
-                  {status === 'failed' && <AlertCircle className="w-5 h-5 text-rose-400" />}
-                  {status === 'pending' && <span>{stepNum}</span>}
-                </div>
+            <button
+              key={step.stepNumber}
+              type="button"
+              onClick={() => onSelectStep?.(step.stepNumber)}
+              className={`flex flex-col text-left group focus:outline-none transition-all duration-fast relative pb-3 border-b-2 ${
+                isCurrent
+                  ? 'border-oxide'
+                  : status === 'done'
+                  ? 'border-rule-strong'
+                  : 'border-transparent'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
                 <span
-                  className={`text-xs mt-2 font-medium transition-colors ${
-                    isCurrent ? 'text-indigo-400 font-semibold' : 'text-slate-400 group-hover:text-slate-200'
+                  className={`font-display text-2xl font-bold transition-colors duration-fast ${
+                    isCurrent || status === 'running'
+                      ? 'text-oxide'
+                      : status === 'failed'
+                      ? 'text-error'
+                      : status === 'done'
+                      ? 'text-paper'
+                      : 'text-muted'
                   }`}
                 >
-                  {label}
+                  {step.numStr}
                 </span>
-              </button>
-              {stepNum < 5 && <div className="hidden sm:block w-12 h-0.5 bg-slate-800" />}
-            </div>
+
+                {status === 'done' && <Check className="w-3.5 h-3.5 text-success" />}
+                {status === 'running' && (
+                  <span className="w-2 h-2 rounded-xs bg-oxide animate-pulse" />
+                )}
+                {status === 'failed' && <AlertCircle className="w-3.5 h-3.5 text-error" />}
+              </div>
+
+              <span
+                className={`text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors duration-fast ${
+                  isCurrent
+                    ? 'text-paper'
+                    : status === 'done'
+                    ? 'text-paper'
+                    : 'text-muted group-hover:text-paper'
+                }`}
+              >
+                {step.name}
+              </span>
+
+              <span className="text-xs font-body italic text-muted/90 mt-0.5 line-clamp-1">
+                {step.subtitle}
+              </span>
+            </button>
           );
         })}
       </div>

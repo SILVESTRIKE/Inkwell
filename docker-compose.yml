@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mongodb:
     image: mongo:latest
-    container_name: book_studio_mongo
+    container_name: inkwell_mongo
     ports:
       - "27017:27017"
     volumes:
@@ -11,33 +11,9 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: book_studio_redis
+    container_name: inkwell_redis
     ports:
       - "6379:6379"
-
-  loki:
-    image: grafana/loki:2.9.0
-    container_name: book_studio_loki
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
-
-  prometheus:
-    image: prom/prometheus:v2.45.0
-    container_name: book_studio_prometheus
-    ports:
-      - "9090:9090"
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: book_studio_grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    depends_on:
-      - loki
-      - prometheus
 
 volumes:
   mongo_data:

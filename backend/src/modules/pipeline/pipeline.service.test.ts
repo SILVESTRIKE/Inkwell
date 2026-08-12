@@ -51,13 +51,13 @@ describe('PipelineService', { timeout: 15000 }, () => {
   });
 
   it('should enforce step ordering (reject running Step 2 before Step 1 is done)', async () => {
-    await expect(pipelineService.enqueueStep(userId, projectId, 2)).rejects.toThrow(
+    await expect(pipelineService.runStep(userId, projectId, 2)).rejects.toThrow(
       'Step 2 cannot run before Step 1 is completed'
     );
   });
 
   it('should execute Step 1 successfully and update project state', async () => {
-    const updated = await pipelineService.executeStepDirect(userId, projectId, 1, {
+    const updated = await pipelineService.runStep(userId, projectId, 1, {
       userStyle: 'Pastel Storybook',
     });
 
@@ -67,17 +67,17 @@ describe('PipelineService', { timeout: 15000 }, () => {
   });
 
   it('should enforce max 2 adult characters cap server-side in Step 2', async () => {
-    await pipelineService.executeStepDirect(userId, projectId, 1);
-    const updated = await pipelineService.executeStepDirect(userId, projectId, 2);
+    await pipelineService.runStep(userId, projectId, 1);
+    const updated = await pipelineService.runStep(userId, projectId, 2);
 
     expect(updated.outputs.characters).toBeDefined();
     expect(updated.outputs.characters!.length).toBeLessThanOrEqual(2);
   });
 
-  it('should recover stuck step when user triggers recoverStuckStep', async () => {
-    await pipelineService.executeStepDirect(userId, projectId, 1);
+  it('should recover stuck step when user triggers recoverStuckStep on an un-locked running step', async () => {
+    await pipelineService.runStep(userId, projectId, 1);
     
-    // Simulate a stuck step
+    // Simulate a stuck step (status running but lock expired/missing)
     await Project.updateOne(
       { _id: projectId, 'stepStates.stepNumber': 2 },
       { $set: { 'stepStates.$.status': 'running' } }
