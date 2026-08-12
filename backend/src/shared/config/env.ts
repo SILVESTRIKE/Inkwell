@@ -27,6 +27,16 @@ if (process.env.NODE_ENV === 'test' && (!process.env.MONGO_URI || parsedEnv.MONG
   parsedEnv.MONGO_URI = parsedEnv.MONGO_URI_TEST;
 }
 
+// Security Check: Fail-fast in production if secrets are unconfigured or using placeholders
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET || parsedEnv.JWT_SECRET.includes('change-me') || parsedEnv.JWT_SECRET === 'development-jwt-secret-key-12345') {
+    throw new Error('FATAL SECURITY ERROR: JWT_SECRET must be set to a secure string in production environment.');
+  }
+  if (!process.env.JWT_REFRESH_SECRET || parsedEnv.JWT_REFRESH_SECRET.includes('change-me') || parsedEnv.JWT_REFRESH_SECRET === 'development-jwt-refresh-secret-key-67890') {
+    throw new Error('FATAL SECURITY ERROR: JWT_REFRESH_SECRET must be set to a secure string in production environment.');
+  }
+}
+
 export const getGeminiApiKeys = (): string[] => {
   const keysSet = new Set<string>();
 
