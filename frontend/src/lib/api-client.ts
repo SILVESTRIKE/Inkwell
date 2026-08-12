@@ -60,6 +60,28 @@ export interface ProjectData {
   updatedAt: string;
 }
 
+function parseJwtPayload(token: string): { user: UserSession['user']; expiresAt: string } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const parsed = JSON.parse(jsonPayload);
+    return {
+      user: { id: parsed.id, email: parsed.email, name: parsed.name },
+      expiresAt: parsed.exp ? new Date(parsed.exp * 1000).toISOString() : new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function getStoredSession(): UserSession | null {
   if (typeof window === 'undefined') return null;
 
@@ -73,13 +95,28 @@ function getStoredSession(): UserSession | null {
   const sessionStr = localStorage.getItem(STORAGE_KEY);
   if (!sessionStr) return null;
 
+  // Case 1: Raw JWT Access Token String (Starts with ey...)
+  if (sessionStr.startsWith('ey')) {
+    const payload = parseJwtPayload(sessionStr);
+    if (!payload) return null;
+    return {
+      accessToken: sessionStr,
+      user: payload.user,
+      expiresAt: payload.expiresAt,
+    };
+  }
+
+  // Case 2: Legacy JSON Session Object
   try {
-    const parsed: UserSession = JSON.parse(sessionStr);
-    // Backwards compatibility normalization
-    if (!parsed.accessToken && parsed.token) {
-      parsed.accessToken = parsed.token;
-    }
-    return parsed;
+    const parsed = JSON.parse(sessionStr);
+    const token = parsed.accessToken || parsed.token;
+    if (!token) return null;
+    const payload = parseJwtPayload(token);
+    return {
+      accessToken: token,
+      user: parsed.user || payload?.user || { id: '', email: '', name: '' },
+      expiresAt: parsed.expiresAt || payload?.expiresAt || new Date().toISOString(),
+    };
   } catch {
     return null;
   }
@@ -118,16 +155,9 @@ async function refreshAccessToken(): Promise<boolean> {
       }
 
       const data = await response.json();
-      if (currentSession && data.accessToken) {
-        const updatedSession: UserSession = {
-          ...currentSession,
-          accessToken: data.accessToken,
-          token: data.accessToken,
-          refreshToken: data.refreshToken || currentSession.refreshToken,
-          expiresAt: data.expiresAt || currentSession.expiresAt,
-        };
+      if (data.accessToken) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSession));
+          localStorage.setItem(STORAGE_KEY, data.accessToken);
         }
         return true;
       }
@@ -188,16 +218,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, name }),
     });
-    // Ensure accessToken field is set
-    const sessionData: UserSession = {
-      ...data,
-      accessToken: data.accessToken || (data as any).token,
-    };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+    const token = data.accessToken || (data as any).token;
+    if (typeof window !== 'undefined' && token) {
+      localStorage.setItem(STORAGE_KEY, token);
       localStorage.removeItem(LEGACY_STORAGE_KEY);
     }
-    return sessionData;
+    const payload = parseJwtPayload(token);
+    return {
+      accessToken: token,
+      user: data.user || payload?.user || { id: '', email: '', name: '' },
+      expiresAt: data.expiresAt || payload?.expiresAt || new Date().toISOString(),
+    };
   },
 
   async logout(): Promise<void> {
