@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ProjectData } from '@/lib/api-client';
+import { ProjectData, api } from '@/lib/api-client';
 import { BookOpen, Sparkles, ScrollText } from 'lucide-react';
 import { ChapterCard } from '@/components/cards/ChapterCard';
 
