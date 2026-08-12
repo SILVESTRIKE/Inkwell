@@ -24,26 +24,26 @@ This document outlines the testing strategy, test coverage, and automated test e
 ```
 === Running Backend Tests ===
 
- ✓ src/shared/utils/media.util.test.ts (3 tests) 8ms
- ✓ src/shared/errors/custom.error.test.ts (6 tests) 7ms
- ✓ src/shared/locks/step.lock.test.ts (3 tests) 37ms
- ✓ src/modules/auth/auth.service.test.ts (4 tests) 135ms
- ✓ src/modules/pipeline/pipeline.service.test.ts (4 tests) 2042ms
+ ✓ src/shared/utils/media.util.test.ts (3 tests) 7ms
+ ✓ src/shared/errors/custom.error.test.ts (6 tests) 9ms
+ ✓ src/shared/locks/step.lock.test.ts (3 tests) 54ms
+ ✓ src/modules/auth/auth.service.test.ts (5 tests) 183ms
+ ✓ src/modules/pipeline/pipeline.service.test.ts (4 tests) 1888ms
 
  Test Files  5 passed (5)
-      Tests  20 passed (20)
-   Start at  20:48:22
-   Duration  3.37s (transform 722ms, setup 0ms, import 2.36s, tests 2.23s, environment 1ms)
+      Tests  21 passed (21)
+   Start at  20:37:21
+   Duration  3.06s (transform 437ms, setup 0ms, import 2.01s, tests 2.14s, environment 1ms)
 
 === Running Frontend Tests ===
 
- ✓ src/components/stepper/Stepper.test.tsx (1 test) 68ms
- ✓ src/components/layout/Header.test.tsx (2 tests) 64ms
+ ✓ src/components/stepper/Stepper.test.tsx (1 test) 84ms
+ ✓ src/components/layout/Header.test.tsx (2 tests) 84ms
 
  Test Files  2 passed (2)
       Tests  3 passed (3)
-   Start at  20:32:45
-   Duration  2.82s (transform 265ms, setup 506ms, import 878ms, tests 132ms, environment 2.00s)
+   Start at  20:37:37
+   Duration  2.69s (transform 361ms, setup 800ms, import 1.08s, tests 168ms, environment 2.63s)
 
 === All Tests Completed Successfully ===
 ```
@@ -56,4 +56,4 @@ This document outlines the testing strategy, test coverage, and automated test e
 - [x] **Second Tab Concurrency**: Opening a second tab while step 3 was running rendered the active step banner and prevented duplicate triggers (`409 Conflict`).
 - [x] **Stuck-step Recovery**: Simulated server interruption during step execution. Triggering "Reset Stuck State" successfully verified step lock status, reset step status to failed, and allowed clean retry.
 - [x] **Error Retry**: Simulated Gemini API error, clicked retry button, and successfully re-ran step 2 without touching step 1 data.
-- [x] **Direct Background Async Processing**: Triggered step 1 — API responded in <50ms with `202 Accepted` and `jobId`. Background task executed step, updated Mongo, and set status to `done`.
+- [x] **Synchronous Step Execution**: Triggered step 1 — API held the request open, executed `runStep` synchronously, and returned `200 OK` with the completed project state. No queue, no `202 Accepted`, no background dispatch.

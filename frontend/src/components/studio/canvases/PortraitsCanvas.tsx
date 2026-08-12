@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ProjectData, api } from '@/lib/api-client';
-import { Image as ImageIcon, Sparkles, User, AlertCircle } from 'lucide-react';
+import { Image as ImageIcon, User, AlertCircle } from 'lucide-react';
 
 interface PortraitsCanvasProps {
   project: ProjectData;

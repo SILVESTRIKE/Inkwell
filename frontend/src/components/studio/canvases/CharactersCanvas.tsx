@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ProjectData } from '@/lib/api-client';
-import { Users, UsersRound, Sparkles } from 'lucide-react';
+import { Users, UsersRound } from 'lucide-react';
 import { CharacterCard } from '@/components/cards/CharacterCard';
 
 interface CharactersCanvasProps {
