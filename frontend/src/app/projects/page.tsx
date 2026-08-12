@@ -99,51 +99,117 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {projects.map(project => {
-            const completedCount = (project.stepStates || []).filter(s => s.status === 'done').length;
+            const stepStates = project.stepStates || [];
+            const completedCount = stepStates.filter(s => s.status === 'done').length;
+            const overallStatus = project.overallStatus || 'draft';
+
+            const ACT_SHORT_NAMES = [
+              { num: 1, label: 'Style' },
+              { num: 2, label: 'Cast' },
+              { num: 3, label: 'Portraits' },
+              { num: 4, label: 'Scenes' },
+              { num: 5, label: 'Artwork' },
+            ];
 
             return (
               <Link
                 key={project._id}
                 href={`/projects/${project._id}`}
-                className="bg-charcoal border border-rule hover:border-rule-strong rounded-md p-6 transition duration-base shadow-card hover:shadow-card-hover flex flex-col justify-between group"
+                className="bg-charcoal border border-rule border-l-4 border-l-oxide hover:border-rule-strong rounded-md p-6 transition duration-base shadow-card hover:shadow-card-hover flex flex-col justify-between group relative overflow-hidden"
               >
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="font-display font-bold text-xl text-paper group-hover:text-oxide transition duration-fast line-clamp-1">
-                      {project.title}
-                    </h3>
-                    <span className="label-sm text-[10px] shrink-0">
-                      {(project.overallStatus || 'draft').replace('_', ' ')}
+                {/* Book Header & Status Badge */}
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center space-x-2.5 min-w-0">
+                      <div className="w-8 h-8 bg-obsidian border border-rule rounded-xs flex items-center justify-center text-oxide shrink-0">
+                        <BookOpen className="w-4 h-4 stroke-[1.5]" />
+                      </div>
+                      <h3 className="font-display font-bold text-xl text-paper group-hover:text-oxide transition duration-fast truncate">
+                        {project.title}
+                      </h3>
+                    </div>
+
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-xs shrink-0 border ${
+                        overallStatus === 'done'
+                          ? 'bg-success/15 text-success border-success/40'
+                          : overallStatus === 'in_progress'
+                          ? 'bg-oxide-soft text-oxide border-oxide/40'
+                          : 'bg-obsidian text-muted border-rule'
+                      }`}
+                    >
+                      {overallStatus.replace('_', ' ')}
                     </span>
                   </div>
 
-                  <p className="text-sm font-body text-muted line-clamp-2 mb-6 leading-relaxed">
-                    {project.bookText}
+                  {/* Manuscript Prose Preview */}
+                  <p className="text-xs font-body text-paper/80 line-clamp-2 leading-relaxed italic border-l-2 border-rule pl-3 py-0.5">
+                    "{project.bookText}"
                   </p>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between text-xs text-muted mb-2 font-ui">
-                    <span className="flex items-center gap-1.5 text-faint">
-                      <Clock className="w-3 h-3" />
+                {/* Visual 5-Act Connected Pipeline Track */}
+                <div className="space-y-4 pt-5 mt-4 border-t border-rule/60">
+                  <div className="flex items-center justify-between text-[11px] font-ui">
+                    <span className="text-muted font-mono uppercase tracking-wider">Pipeline Progress</span>
+                    <span className="font-bold text-paper font-mono">
+                      {completedCount} / 5 Acts Done
+                    </span>
+                  </div>
+
+                  {/* Connected Stepper Line & Nodes */}
+                  <div className="relative flex items-center justify-between px-1 py-1">
+                    {/* Background Line */}
+                    <div className="absolute top-3.5 left-4 right-4 h-0.5 bg-obsidian border-t border-rule -translate-y-1/2 rounded-full" />
+
+                    {/* Progress Fill Line */}
+                    <div
+                      className="absolute top-3.5 left-4 h-0.5 bg-oxide -translate-y-1/2 transition-all duration-500 rounded-full"
+                      style={{ width: `${((Math.max(1, completedCount) - 1) / 4) * 88}%` }}
+                    />
+
+                    {ACT_SHORT_NAMES.map(act => {
+                      const state = stepStates.find(s => s.stepNumber === act.num);
+                      const status = state?.status || 'pending';
+
+                      return (
+                        <div key={act.num} className="relative z-10 flex flex-col items-center group/node">
+                          <div
+                            className={`w-7 h-7 rounded-full text-[10px] font-mono font-bold flex items-center justify-center transition-all duration-300 ${
+                              status === 'done'
+                                ? 'bg-oxide text-paper border-2 border-oxide shadow-card'
+                                : status === 'failed'
+                                ? 'bg-error-bg text-error border-2 border-error'
+                                : status === 'running'
+                                ? 'bg-oxide-soft text-oxide border-2 border-oxide animate-pulse'
+                                : 'bg-obsidian text-muted border-2 border-rule'
+                            }`}
+                          >
+                            {status === 'done' ? (
+                              <span className="text-paper text-[11px] font-bold">✓</span>
+                            ) : (
+                              <span>0{act.num}</span>
+                            )}
+                          </div>
+                          <span className="text-[9px] font-mono text-muted mt-1.5 transition-colors group-hover/node:text-paper">
+                            {act.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Card Bottom Meta & CTA */}
+                  <div className="flex items-center justify-between text-xs pt-2">
+                    <span className="flex items-center gap-1.5 text-faint text-[11px] font-mono">
+                      <Clock className="w-3 h-3 text-oxide shrink-0" />
                       {new Date(project.createdAt).toLocaleDateString()}
                     </span>
-                    <span className="font-medium text-paper text-xs">
-                      {completedCount} / 5 Acts
-                    </span>
-                  </div>
 
-                  {/* Thin 1px rule progress line */}
-                  <div className="w-full h-px bg-obsidian rounded-xs overflow-hidden mb-4 border-t border-rule">
-                    <div
-                      className="h-full bg-oxide transition-all duration-300"
-                      style={{ width: `${(completedCount / 5) * 100}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center text-xs font-semibold uppercase tracking-wider text-oxide group-hover:text-oxide-hover">
-                    <span>Open Pipeline</span>
-                    <ArrowRight className="w-3.5 h-3.5 ml-1 transform group-hover:translate-x-1 transition duration-fast" />
+                    <div className="flex items-center text-xs font-bold uppercase tracking-wider text-oxide group-hover:text-oxide-hover">
+                      <span>Open Studio</span>
+                      <ArrowRight className="w-3.5 h-3.5 ml-1 transform group-hover:translate-x-1 transition duration-fast" />
+                    </div>
                   </div>
                 </div>
               </Link>
