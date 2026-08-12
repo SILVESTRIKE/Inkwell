@@ -155,7 +155,7 @@ export class GeminiClient {
     throw lastError || new Error('All Gemini API keys exhausted without success.');
   }
 
-  // Generate Image using gemini-3.1-flash-image generateContent with multimodal character consistency
+  // Generate Image using gemini-3.1-flash-image generateContent with responseModalities: ['IMAGE']
   async generateImage(options: GeminiImageOptions): Promise<Buffer> {
     if (this.apiKeys.length === 0) {
       return this.getMockImageBuffer();
@@ -192,6 +192,9 @@ export class GeminiClient {
           parts,
         },
       ],
+      generationConfig: {
+        responseModalities: ['IMAGE'],
+      },
     };
 
     const maxAttempts = Math.max(1, this.apiKeys.length);
@@ -215,42 +218,19 @@ export class GeminiClient {
             lastError = new Error(`Gemini Image API rate-limited (429): ${errText}`);
             continue;
           }
-
-          // Fallback to imagen-3.0-generate-002:predict endpoint if generateContent on model is unssupported by older keys
-          const legacyPredictUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
-          const legacyBody = {
-            instances: [{ prompt: fullPrompt }],
-            parameters: { sampleCount: 1, aspectRatio: '1:1', outputOptions: { mimeType: 'image/jpeg' } },
-          };
-          const predictRes = await fetch(legacyPredictUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(legacyBody),
-          });
-
-          if (predictRes.ok) {
-            const predictData = await predictRes.json();
-            const b64 = predictData.predictions?.[0]?.bytesBase64Encoded;
-            if (b64) return Buffer.from(b64, 'base64');
-          }
-
           throw new Error(`Gemini Image API returned HTTP ${response.status}: ${errText}`);
         }
 
         const data = await response.json();
         const candidateParts = data.candidates?.[0]?.content?.parts || [];
-        
+
         for (const part of candidateParts) {
           if (part.inlineData?.data) {
             return Buffer.from(part.inlineData.data, 'base64');
           }
         }
 
-        if (data.predictions?.[0]?.bytesBase64Encoded) {
-          return Buffer.from(data.predictions[0].bytesBase64Encoded, 'base64');
-        }
-
-        throw new Error('Gemini Image API returned invalid response payload structure (no inlineData bytes found).');
+        throw new Error('Gemini Image API returned invalid response payload structure (no inlineData image bytes found).');
       } catch (err: any) {
         lastError = err;
         if (attempt < maxAttempts - 1 && err.message?.includes('429')) {

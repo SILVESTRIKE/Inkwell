@@ -36,6 +36,12 @@ export async function runIllustrationsStep(
 
   for (let i = 0; i < chapters.length; i++) {
     const ch = chapters[i];
+
+    // Skip generating if illustration is already generated (preserves API quota on retries)
+    if (ch.illustrationFilename) {
+      continue;
+    }
+
     const filename = `illustration_${ch.id}.jpg`;
     
     const imageBuffer = await geminiClient.generateImage({

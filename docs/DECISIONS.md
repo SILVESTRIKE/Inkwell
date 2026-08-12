@@ -22,11 +22,11 @@ Claude proposed button-disabled attributes in the frontend to prevent double-cli
 
 Cost accepted: If the server crashes hard mid-call, the lock stays in Redis for up to 60 seconds before expiring, but users are provided a "Reset Stuck State" affordance to clear it manually if needed.
 
-## Direct Non-Blocking Background Execution & Zero Auto-Retries
+## Direct Synchronous Execution (`runStep`) over BullMQ or Background Fire-and-Forget
 
-To strictly adhere to the project rules and §4.3 requirement ("Never auto-retry a Gemini call in a loop — retries are user-triggered only"), we simplified the pipeline execution model from BullMQ queues to direct non-blocking background execution using `setImmediate()` protected by Redis `SET NX` locks. Clicking "Run Step" responds immediately (`202 Accepted`) and executes the Gemini call asynchronously in the background.
+An initial attempt to remove BullMQ landed on a hand-rolled `setImmediate()` fire-and-forget background call with `202 Accepted`. During code review, we identified that fire-and-forget provided no client completion guarantees and risked detached execution. We refactored to direct awaited execution (`runStep`), where the backend awaits the step result, saves state, releases the lock, and returns HTTP `200 OK` with the completed project.
 
-Cost accepted: Eliminates BullMQ worker process overhead while maintaining non-blocking async API responses and atomic lock protection.
+Cost accepted: The HTTP response waits for the single step to finish, but API execution is 100% deterministic, completion is guaranteed before response return, and BullMQ/Observability queue complexity is completely eliminated.
 
 ## Strict Rate Limiting (Global, Auth, and Pipeline)
 

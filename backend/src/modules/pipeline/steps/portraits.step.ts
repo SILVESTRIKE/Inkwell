@@ -19,6 +19,12 @@ export async function runPortraitsStep(
 
   for (let i = 0; i < characters.length; i++) {
     const char = characters[i];
+
+    // Skip generating if portrait is already generated (preserves API quota on retries)
+    if (char.portraitFilename) {
+      continue;
+    }
+
     const filename = `portrait_${char.id}.jpg`;
     
     const imageBuffer = await geminiClient.generateImage({

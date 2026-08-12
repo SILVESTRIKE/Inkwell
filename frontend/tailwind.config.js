@@ -8,21 +8,42 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Backgrounds
         obsidian: 'var(--color-bg)',
+        bg: 'var(--color-bg)',
         charcoal: 'var(--color-bg-raised)',
+        raised: 'var(--color-bg-raised)',
         sunken: 'var(--color-bg-sunken)',
+        
+        // Text
         paper: 'var(--color-text)',
+        ink: 'var(--color-text)',
+        text: 'var(--color-text)',
         muted: 'var(--color-text-muted)',
         faint: 'var(--color-text-faint)',
+        
+        // Accents
         oxide: {
           DEFAULT: 'var(--color-accent)',
           hover: 'var(--color-accent-hover)',
           soft: 'var(--color-accent-soft)',
         },
+        accent: {
+          DEFAULT: 'var(--color-accent)',
+          hover: 'var(--color-accent-hover)',
+          soft: 'var(--color-accent-soft)',
+        },
+        
+        // Borders
         rule: {
           DEFAULT: 'var(--color-border)',
           strong: 'var(--color-border-strong)',
         },
+        border: {
+          DEFAULT: 'var(--color-border)',
+          strong: 'var(--color-border-strong)',
+        },
+        
         success: 'var(--color-success)',
         error: {
           DEFAULT: 'var(--color-error)',
