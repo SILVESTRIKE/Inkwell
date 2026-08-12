@@ -45,7 +45,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="space-y-8 font-ui">
+    <div className="space-y-8 font-ui max-w-5xl mx-auto w-full px-4 py-8 sm:px-8 sm:py-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-rule pb-6">
         <div>
