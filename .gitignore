@@ -140,3 +140,7 @@ backend/uploads/
 
 # Repomix outputs
 repomix-output*
+
+# AI Agent Customizations
+.agents/
+
